@@ -1,0 +1,24 @@
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm AS builder
+
+WORKDIR /app
+
+COPY pyproject.toml .
+COPY uv.lock .
+
+RUN uv sync --frozen --no-install-project
+
+FROM python:3.13-slim
+
+WORKDIR /app
+
+RUN adduser --disabled-password --gecos '' appuser
+COPY --from=builder /app/.venv .venv
+COPY src/ ./src/
+
+RUN chown -R appuser:appuser /app
+USER appuser
+
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH=/app
+
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
