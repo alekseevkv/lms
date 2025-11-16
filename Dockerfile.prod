@@ -13,6 +13,7 @@ WORKDIR /app
 
 RUN adduser --disabled-password --gecos '' appuser
 COPY --from=builder /app/.venv .venv
+COPY settings.toml .
 COPY src/ ./src/
 
 RUN chown -R appuser:appuser /app
