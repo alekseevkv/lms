@@ -6,7 +6,7 @@ from .base import Base, BaseModelMixin
 
 
 class Course(Base, BaseModelMixin):
-    __tablename__ = "course"
+    __tablename__ = "courses"
 
     name = Column(String, nullable=False, unique=True)
     desc = Column(Text)
