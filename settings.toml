@@ -11,3 +11,8 @@ db_user = "user"
 db_password = "password"
 db_host = "db"
 db_port = 5432
+
+[auth_settings]
+secret_key = "lms"
+algorithm = "HS256"
+access_token_expire_minutes = 30
