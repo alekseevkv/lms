@@ -85,6 +85,14 @@ class AuthService:
         await self.auth_repo.delete_from_set(f"u_rt:{user_email}", token_hash)
         return user_email
 
+    async def revoke_all_refresh_tokens(self, user_email: str):
+        set_name = f"u_rt:{user_email}"
+        token_hashes = await self.auth_repo.get_set(set_name)
+        if token_hashes:
+            keys = [f"rt:{h}" for h in token_hashes]
+            await self.auth_repo.delete(*keys)
+        await self.auth_repo.delete(set_name)
+
     async def get_current_user(
         self,
     ) -> User:

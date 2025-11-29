@@ -21,8 +21,12 @@ class AuthRepository:
         value = await self.db.get(key)
         return value
 
-    async def delete(self, key: str) -> None:
-        await self.db.delete(key)
+    async def get_set(self, set_name: str):
+        set_members = await self.db.smembers(set_name)  # type: ignore
+        return set_members
+
+    async def delete(self, *key: str) -> None:
+        await self.db.delete(*key)
 
     async def delete_from_set(self, set_name: str, value: str) -> None:
         await self.db.srem(set_name, value)  # type: ignore

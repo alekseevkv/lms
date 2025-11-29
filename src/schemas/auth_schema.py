@@ -14,3 +14,7 @@ class SigninRequest(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class LogoutResponse(BaseModel):
+    msg: str
