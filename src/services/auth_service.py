@@ -1,4 +1,7 @@
+import hashlib
+import secrets
 from datetime import datetime, timedelta
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -7,6 +10,7 @@ from passlib.context import CryptContext
 
 from src.configs.app import settings
 from src.models.user import User
+from src.repositories.auth import AuthRepository, get_auth_repository
 from src.repositories.user import UserRepository, get_user_repository
 
 security = HTTPBearer()
@@ -15,10 +19,12 @@ security = HTTPBearer()
 class AuthService:
     def __init__(
         self,
-        repo: UserRepository,
+        user_repo: UserRepository,
+        auth_repo: AuthRepository,
         credentials: HTTPAuthorizationCredentials | None = None,
     ):
-        self.repo = repo
+        self.user_repo = user_repo
+        self.auth_repo = auth_repo
         self.pwd_context = CryptContext(schemes=["sha512_crypt"])
         self.credentials = credentials
 
@@ -26,7 +32,7 @@ class AuthService:
         return self.pwd_context.verify(plain_password, hashed_password)
 
     async def authenticate_user(self, email: str, password: str) -> User | None:
-        user = await self.repo.get_by_email(email)
+        user = await self.user_repo.get_by_email(email)
 
         if not user:
             return None
@@ -35,19 +41,33 @@ class AuthService:
         return user
 
     def create_access_token(self, data: dict, expires_delta: timedelta | None = None):
-        if expires_delta:
-            expire = datetime.utcnow() + expires_delta
-        else:
-            expire = datetime.utcnow() + timedelta(minutes=15)
+        encoding_data = data.copy()
+        expire = (
+            datetime.utcnow() + expires_delta
+            if expires_delta
+            else datetime.utcnow() + timedelta(minutes=15)
+        )
 
-        data.update({"exp": expire})
+        encoding_data.update({"exp": expire})
 
         encoded_jwt = jwt.encode(
-            data,
+            encoding_data,
             settings.auth.secret_key,
             algorithm=settings.auth.algorithm,
         )
+
         return encoded_jwt
+
+    def create_refresh_token(self) -> str:
+        return secrets.token_urlsafe(64)
+
+    def hash_refresh_token(self, token: str) -> str:
+        return hashlib.sha256(token.encode()).hexdigest()
+
+    async def store_refresh_token(self, user_id: UUID, token: str):
+        token_hash = self.hash_refresh_token(token)
+        expires_sec = settings.auth.refresh_token_expire_days * 24 * 3600
+        await self.auth_repo.save_refresh_token(token_hash, expires_sec, user_id)
 
     async def get_current_user(
         self,
@@ -73,7 +93,7 @@ class AuthService:
         except JWTError:
             raise credentials_exception
 
-        user = await self.repo.get_by_email(email)
+        user = await self.user_repo.get_by_email(email)
         if user is None:
             raise credentials_exception
         if user.archived is True:
@@ -82,13 +102,15 @@ class AuthService:
 
 
 async def get_req_service(
-    repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepository = Depends(get_user_repository),
+    auth_repo: AuthRepository = Depends(get_auth_repository),
 ) -> AuthService:
-    return AuthService(repo)
+    return AuthService(user_repo, auth_repo)
 
 
 async def get_auth_service(
-    repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepository = Depends(get_user_repository),
+    auth_repo: AuthRepository = Depends(get_auth_repository),
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> AuthService:
-    return AuthService(repo, credentials)
+    return AuthService(user_repo, auth_repo, credentials)

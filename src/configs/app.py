@@ -28,6 +28,7 @@ class AuthConfig(BaseModel):
     secret_key: str
     algorithm: str
     access_token_expire_minutes: int
+    refresh_token_expire_days: int
 
 
 class RedisConfig(BaseModel):

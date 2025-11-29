@@ -35,11 +35,19 @@ async def signin(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
     access_token_expires = timedelta(minutes=settings.auth.access_token_expire_minutes)
     access_token = service.create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    refresh_token = service.create_refresh_token()
+    await service.store_refresh_token(user.uuid, refresh_token)  # type: ignore
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+    }
 
 
 @router.get("/users/me/", response_model=UserResponse)
