@@ -12,6 +12,7 @@ dependencies = [
     "passlib>=1.7.4",
     "python-jose>=3.5.0",
     "python-multipart>=0.0.20",
+    "redis>=7.1.0",
     "sqlalchemy>=2.0.44",
 ]
 
