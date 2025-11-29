@@ -7,6 +7,10 @@ class SigninResponse(BaseModel):
     token_type: str
 
 
-class Signin(BaseModel):
+class SigninRequest(BaseModel):
     email: EmailStr
     password: str
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str

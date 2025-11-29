@@ -1,7 +1,6 @@
 import hashlib
 import secrets
 from datetime import datetime, timedelta
-from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -64,10 +63,27 @@ class AuthService:
     def hash_refresh_token(self, token: str) -> str:
         return hashlib.sha256(token.encode()).hexdigest()
 
-    async def store_refresh_token(self, user_id: UUID, token: str):
+    async def store_refresh_token(self, user_email: str, token: str):
         token_hash = self.hash_refresh_token(token)
         expires_sec = settings.auth.refresh_token_expire_days * 24 * 3600
-        await self.auth_repo.save_refresh_token(token_hash, expires_sec, user_id)
+        refresh_token_set = f"u_rt:{user_email}"
+        await self.auth_repo.add_key_value_with_exp(
+            f"rt:{token_hash}", user_email, expires_sec
+        )
+        await self.auth_repo.add_set_value(refresh_token_set, token_hash)
+        await self.auth_repo.add_set_exp(refresh_token_set, expires_sec + 3600)
+
+    async def validate_refresh_token(self, token: str) -> str:
+        token_hash = self.hash_refresh_token(token)
+        key = f"rt:{token_hash}"
+        user_email = await self.auth_repo.get_by_key(key)
+        if not user_email:
+            raise HTTPException(
+                status_code=401, detail="Invalid or expired refresh token"
+            )
+        await self.auth_repo.delete(key)
+        await self.auth_repo.delete_from_set(f"u_rt:{user_email}", token_hash)
+        return user_email
 
     async def get_current_user(
         self,

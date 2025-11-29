@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from fastapi import Depends
 from redis.asyncio import Redis
 
@@ -10,12 +8,24 @@ class AuthRepository:
     def __init__(self, db: Redis):
         self.db = db
 
-    async def save_refresh_token(
-        self, token_hash: str, expires_sec: int, user_id: UUID
-    ):
-        await self.db.setex(f"rt:{token_hash}", expires_sec, str(user_id))
-        await self.db.sadd(f"u_rt:{user_id}", token_hash)  # type: ignore
-        await self.db.expire(f"u_rt:{user_id}", expires_sec + 3600)
+    async def add_key_value_with_exp(self, key: str, value: str, exp: int) -> None:
+        await self.db.setex(key, exp, value)
+
+    async def add_set_value(self, set_name: str, value: str) -> None:
+        await self.db.sadd(set_name, value)  # type: ignore
+
+    async def add_set_exp(self, set_name: str, exp: int) -> None:
+        await self.db.expire(set_name, exp)
+
+    async def get_by_key(self, key: str) -> str | None:
+        value = await self.db.get(key)
+        return value
+
+    async def delete(self, key: str) -> None:
+        await self.db.delete(key)
+
+    async def delete_from_set(self, set_name: str, value: str) -> None:
+        await self.db.srem(set_name, value)  # type: ignore
 
 
 async def get_auth_repository(
