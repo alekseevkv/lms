@@ -24,7 +24,7 @@ class AuthService:
     ):
         self.user_repo = user_repo
         self.auth_repo = auth_repo
-        self.pwd_context = CryptContext(schemes=["sha512_crypt"])
+        self.pwd_context = CryptContext(schemes=["argon2"])
         self.credentials = credentials
 
     def verify_password(self, plain_password, hashed_password) -> bool:

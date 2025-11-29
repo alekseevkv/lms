@@ -11,7 +11,7 @@ from src.schemas.user_schema import UserSignup
 class UserService:
     def __init__(self, repo: UserRepository):
         self.repo = repo
-        self.pwd_context = CryptContext(schemes=["sha512_crypt"])
+        self.pwd_context = CryptContext(schemes=["argon2"])
 
     def get_password_hash(self, password: str) -> str:
         return self.pwd_context.hash(password)
