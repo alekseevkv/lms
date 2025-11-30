@@ -1,3 +1,4 @@
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -12,3 +13,7 @@ class CourseResponse(CourseBase):
     uuid: UUID
 
     model_config = {"from_attributes": True}
+
+class CourseUpdate(CourseBase):
+    name: Optional[str] = None
+    desc: Optional[str] = None
