@@ -15,7 +15,16 @@ router = APIRouter()
 async def add_course(
     course_date: CourseBase,
     service: CourseService = Depends(get_course_service),
+    auth_service: AuthService = Depends(get_auth_service),
 ):
+    current_user = await auth_service.get_current_user()
+
+    if UserRole.admin not in current_user.roles:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User can only be updated by admin",
+        )
+
     res = await service.create_course(course_date)
 
     return res
@@ -26,7 +35,15 @@ async def update_course(
     course_id: UUID,
     course_date: CourseUpdate,
     service: CourseService = Depends(get_course_service),
+    auth_service: AuthService = Depends(get_auth_service),
 ):
+    current_user = await auth_service.get_current_user()
+
+    if UserRole.admin not in current_user.roles:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User can only be updated by admin",
+        )
     res = await service.update_course(course_id, course_date)
 
     return res
@@ -34,8 +51,18 @@ async def update_course(
 
 @router.patch("/course/{course_id}/delete", summary="Delete a course by id")
 async def delete_course(
-    course_id: UUID, service: CourseService = Depends(get_course_service)
+    course_id: UUID,
+    service: CourseService = Depends(get_course_service),
+    auth_service: AuthService = Depends(get_auth_service),
 ):
+    current_user = await auth_service.get_current_user()
+
+    if UserRole.admin not in current_user.roles:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User can only be updated by admin",
+        )
+
     await service.delete_course(course_id)
     return {"message": "Course delete successfully"}
 

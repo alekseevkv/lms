@@ -14,6 +14,6 @@ class CourseResponse(CourseBase):
 
     model_config = {"from_attributes": True}
 
-class CourseUpdate(CourseBase):
+class CourseUpdate(BaseModel):
     name: Optional[str] = None
     desc: Optional[str] = None
