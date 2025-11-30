@@ -29,6 +29,12 @@ class UserRepository:
 
         return result.scalar_one_or_none()
 
+    async def update_password(self, user: User, hashed_password: str) -> None:
+        user.password = hashed_password
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+
 
 async def get_user_repository(
     db: AsyncSession = Depends(get_session),
