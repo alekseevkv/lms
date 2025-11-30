@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Coroutine
 
 from fastapi import Depends
 from sqlalchemy import select
@@ -33,6 +33,36 @@ class CourseRepository:
         result = await self.db.execute(select(Course).offset(skip).limit(limit))
 
         return result.scalars().all()
+
+    async def create(self, course_date: dict) -> Course | None:
+        course = Course(**course_date)
+        self.db.add(course)
+        await self.db.commit()
+        await self.db.refresh(course)
+
+        return course
+
+    async def update(self, course_id: Any, update_data: dict) -> Course | None:
+        course = await self.get_by_id(course_id)
+        if not course:
+            return None
+
+        for key, value in update_data.items():
+            setattr(course, key, value)
+
+        await self.db.commit()
+        await self.db.refresh(course)
+        return course
+
+
+    async def delete(self, course_id: Any) -> Course | None:
+        course = await self.get_by_id(course_id)
+        if course:
+            course.archived = True
+            await self.db.commit()
+            await self.db.refresh(course)
+
+        return course
 
 
 async def get_course_repository(

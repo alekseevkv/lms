@@ -5,6 +5,7 @@ from redis.asyncio import Redis
 
 from src.api.v1.auth_api import router as auth_router
 from src.api.v1.course_api import router as course_router
+from src.api.v1.admin_api import router as admin_router
 from src.redis_client import set_redis_client
 
 from .configs.app import settings
@@ -34,3 +35,4 @@ app = FastAPI(
 
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(course_router, prefix="/api/v1/courses", tags=["course"])
+app.include_router(admin_router, prefix="/api/v1/admin", tags=["admin"])
