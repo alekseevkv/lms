@@ -1,4 +1,5 @@
 import re
+from enum import Enum
 
 from pydantic import BaseModel, EmailStr, field_validator, model_validator
 
@@ -28,6 +29,12 @@ def validate_password(v: str) -> str:
         raise ValueError(f"Пароль должен содержать: {', '.join(errors)}")
 
     return v
+
+
+class UserRole(str, Enum):
+    student = "student"
+    teacher = "teacher"
+    admin = "admin"
 
 
 class UserBase(BaseModel):
@@ -69,3 +76,14 @@ class ChangePasswordRequest(BaseModel):
 
 class ChangePasswordResponse(BaseModel):
     msg: str
+
+
+class UpdateUserRequest(BaseModel):
+    email: EmailStr | None = None
+    username: str | None = None
+
+
+class UpdateUserByAdminRequest(UserBase):
+    new_email: EmailStr | None = None
+    username: str | None = None
+    roles: list[UserRole] | None = None

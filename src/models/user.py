@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Any
 
 from sqlalchemy import String
@@ -6,12 +5,6 @@ from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base, BaseModelMixin
-
-
-class UserRole(str, Enum):
-    student = "student"
-    teacher = "teacher"
-    admin = "admin"
 
 
 class User(Base, BaseModelMixin):

@@ -13,6 +13,7 @@ from src.schemas.auth_schema import (
 from src.schemas.user_schema import (
     ChangePasswordRequest,
     ChangePasswordResponse,
+    UpdateUserRequest,
     UserResponse,
     UserSignupRequest,
 )
@@ -28,6 +29,16 @@ async def signup(
     service: UserService = Depends(get_user_service),
 ) -> User:
     res = await service.create_user(data)
+
+    return res
+
+
+@router.post("/signup-admin", response_model=UserResponse, summary="Admin signup")
+async def signup_admin(
+    data: UserSignupRequest,
+    service: UserService = Depends(get_user_service),
+) -> User:
+    res = await service.create_admin(data)
 
     return res
 
@@ -89,7 +100,7 @@ async def logout(
     return {"msg": "OK"}
 
 
-@router.get("/users/me/", response_model=UserResponse, summary="Get current user info")
+@router.get("/users/me", response_model=UserResponse, summary="Get current user info")
 async def get_user_me(
     service: AuthService = Depends(get_auth_service),
 ):
@@ -120,3 +131,16 @@ async def change_password(
         )
 
     return {"msg": "Password changed successfully"}
+
+
+@router.patch("/users", response_model=UserResponse, summary="Update user")
+async def update_user(
+    data: UpdateUserRequest,
+    auth_service: AuthService = Depends(get_auth_service),
+    user_service: UserService = Depends(get_user_service),
+):
+    current_user = await auth_service.get_current_user()
+
+    updated_user = await user_service.update_user(current_user, data)
+
+    return updated_user

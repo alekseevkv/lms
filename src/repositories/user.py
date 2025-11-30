@@ -1,7 +1,9 @@
+from datetime import datetime
 from uuid import UUID
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_session
@@ -31,9 +33,24 @@ class UserRepository:
 
     async def update_password(self, user: User, hashed_password: str) -> None:
         user.password = hashed_password
+        user.update_at = datetime.utcnow()
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
+
+    async def update(self, user: User) -> User:
+        try:
+            self.db.add(user)
+            await self.db.commit()
+            await self.db.refresh(user)
+        except IntegrityError as e:
+            await self.db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already exists",
+            ) from e
+
+        return user
 
 
 async def get_user_repository(
