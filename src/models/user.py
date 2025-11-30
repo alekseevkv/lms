@@ -1,7 +1,9 @@
 from enum import Enum
 from typing import Any
 
-from sqlalchemy import ARRAY, Column, String
+from sqlalchemy import String
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base, BaseModelMixin
 
@@ -15,15 +17,17 @@ class UserRole(str, Enum):
 class User(Base, BaseModelMixin):
     __tablename__ = "users"
 
-    username = Column(String)
-    email = Column(String, nullable=False, unique=True)
-    password = Column(String, nullable=False)
-    roles = Column(ARRAY(String), nullable=False, default=lambda: [])
+    username: Mapped[str | None] = mapped_column(String, nullable=True)
+    email: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    password: Mapped[str] = mapped_column(String, nullable=False)
+    roles: Mapped[list[str]] = mapped_column(
+        ARRAY(String), nullable=False, default=list
+    )
 
     def __repr__(self) -> str:
         return (
-            f"uuid - {self.uuid}, username - {self.username}"
-            f"email - {self.email}, roles - {self.roles}"
+            f"User(uuid={self.uuid}, username={self.username}, "
+            f"email={self.email}, roles={self.roles})"
         )
 
     def to_dict(self) -> dict[str, Any]:

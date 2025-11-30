@@ -1,7 +1,6 @@
 from datetime import timedelta
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.configs.app import settings
 from src.models.user import User
@@ -11,7 +10,12 @@ from src.schemas.auth_schema import (
     SigninRequest,
     SigninResponse,
 )
-from src.schemas.user_schema import UserResponse, UserSignup
+from src.schemas.user_schema import (
+    ChangePasswordRequest,
+    ChangePasswordResponse,
+    UserResponse,
+    UserSignupRequest,
+)
 from src.services.auth_service import AuthService, get_auth_service, get_req_service
 from src.services.user_service import UserService, get_user_service
 
@@ -20,7 +24,7 @@ router = APIRouter()
 
 @router.post("/signup", response_model=UserResponse, summary="User signup")
 async def signup(
-    data: Annotated[UserSignup, Form()],
+    data: UserSignupRequest,
     service: UserService = Depends(get_user_service),
 ) -> User:
     res = await service.create_user(data)
@@ -30,7 +34,7 @@ async def signup(
 
 @router.post("/signin", response_model=SigninResponse, summary="User signin")
 async def signin(
-    data: Annotated[SigninRequest, Form()],
+    data: SigninRequest,
     service: AuthService = Depends(get_req_service),
 ):
     user = await service.authenticate_user(data.email, data.password)
@@ -47,7 +51,7 @@ async def signin(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     refresh_token = service.create_refresh_token()
-    await service.store_refresh_token(user.email, refresh_token)  # type: ignore
+    await service.store_refresh_token(user.email, refresh_token)
 
     return {
         "access_token": access_token,
@@ -58,7 +62,7 @@ async def signin(
 
 @router.post("/refresh", response_model=SigninResponse, summary="Refresh tokens")
 async def refresh(
-    data: Annotated[RefreshRequest, Form()],
+    data: RefreshRequest,
     service: AuthService = Depends(get_req_service),
 ):
     user_email = await service.validate_refresh_token(data.refresh_token)
@@ -67,7 +71,7 @@ async def refresh(
         data={"sub": user_email}, expires_delta=access_token_expires
     )
     refresh_token = service.create_refresh_token()
-    await service.store_refresh_token(user_email, refresh_token)  # type: ignore
+    await service.store_refresh_token(user_email, refresh_token)
 
     return {
         "access_token": access_token,
@@ -81,7 +85,7 @@ async def logout(
     service: AuthService = Depends(get_auth_service),
 ):
     current_user = await service.get_current_user()
-    await service.revoke_all_refresh_tokens(current_user.email)  # type: ignore
+    await service.revoke_all_refresh_tokens(current_user.email)
     return {"msg": "OK"}
 
 
@@ -92,3 +96,27 @@ async def get_user_me(
     current_user = await service.get_current_user()
 
     return current_user
+
+
+@router.post(
+    "/change-password", response_model=ChangePasswordResponse, summary="Change password"
+)
+async def change_password(
+    data: ChangePasswordRequest,
+    auth_service: AuthService = Depends(get_auth_service),
+    user_service: UserService = Depends(get_user_service),
+):
+    current_user = await auth_service.get_current_user()
+
+    success = await user_service.change_password(
+        user=current_user,
+        old_password=data.old_password,
+        new_password=data.new_password,
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+
+    return {"msg": "Password changed successfully"}
