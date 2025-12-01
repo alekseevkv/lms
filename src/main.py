@@ -7,6 +7,7 @@ from src.api.v1.auth_api import router as auth_router
 from src.api.v1.course_api import router as course_router
 from src.api.v1.admin_api import router as admin_router
 from src.api.v1.test_question_api import router as test_question_router
+from src.api.v1.review_api import router as review_router
 
 from src.redis_client import set_redis_client
 
@@ -42,4 +43,10 @@ app.include_router(
     test_question_router,
     prefix="/api/v1/test_questions",
     tags=["test_questions"]
+)
+
+app.include_router(
+    review_router,
+  prefix="/api/v1/reviews",
+   tags=["review"],
 )
