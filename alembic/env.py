@@ -11,7 +11,8 @@ from src.models.base import Base
 from src.models.course import Course  # noqa: F401
 from src.models.user import User  # noqa: F401
 from src.models.test_question import TestQuestion  # noqa: F401
-
+from src.models.lesson import Lesson # noqa: F401 
+from src.models.user_course import UserCourse, UserLessonProgress # noqa: F401 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
