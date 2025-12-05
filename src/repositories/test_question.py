@@ -22,7 +22,7 @@ class TestQuestionRepository:
         result = await self.db.execute(select(TestQuestion).offset(skip).limit(limit))
         return result.scalars().all()
 
-    async def get_by_lesson_id(self, lesson_id: Any) -> Sequence[TestQuestion] | None:
+    async def get_by_lesson_id(self, lesson_id: str) -> Sequence[TestQuestion] | None:
         '''Получить тесты по ID урока'''
         result = await self.db.execute(select(TestQuestion).where(TestQuestion.lesson_id == lesson_id, not_(TestQuestion.archived)))
         return result.scalars().all()
@@ -74,14 +74,14 @@ class TestQuestionRepository:
             await self.db.refresh(test_question)
         return test_question
 
-    async def delete(self, test_question_id: Any) -> bool:
+    async def delete(self, test_question_id: Any) -> TestQuestion | None:
         '''Удалить тест'''
         test_question = await self.get_by_id(test_question_id)
         if test_question:
             test_question.archived = True
             await self.db.commit()
-            return True
-        return False
+            await self.db.refresh(test_question)
+        return test_question
 
     async def get_correct_answer(self, question_id: Any) -> str | None:
         '''Получить правильный ответ по ID'''
