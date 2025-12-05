@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.repositories.review import ReviewRepository
 from src.schemas.review_schema import ReviewCreate, ReviewResponse, ReviewUpdate
-from src.services.database import get_session
+from src.database import get_session
 
 router = APIRouter()
 
