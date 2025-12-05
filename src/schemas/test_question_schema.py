@@ -1,52 +1,49 @@
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict
-from typing import Optional, List
+from pydantic import BaseModel
+from typing import Optional, List, Dict
 
 
 class TestQuestionBase(BaseModel):
     name: str
     desc: Optional[str] = None
     question: str
-    choices: List[str]
-    correct_answer: str
-    lesson_id: UUID
+    choices: Dict[str,str]
+    lesson_id: str
+    # lesson_id: UUID
 
 
 class TestQuestionCreate(TestQuestionBase):
-    pass
+    correct_answer: str
 
 
-class TestQuestionUpdate(TestQuestionBase):
+class TestQuestionUpdate(BaseModel):
     name: Optional[str] = None
     desc: Optional[str] = None
     question: Optional[str] = None
-    choices: Optional[List[str]] = None
+    choices: Optional[dict[str,str]] = None
     correct_answer: Optional[str] = None
-    lesson_id: Optional[UUID] = None
-
-
-class TestQuestionResponse(TestQuestionBase):
-    uuid: UUID
-    model_config = {"from_attributes": True}
-
-
-class TestQuestionListResponse(BaseModel):
-    test_questions: list[TestQuestionResponse]
-    total: int
-    skip: int
-    limit: int
+    lesson_id: Optional[str] = None
+    # lesson_id: Optional[UUID] = None
 
 
 class TestQuestionWithoutAnswerResponse(TestQuestionBase):
     uuid: UUID
-    model_config = ConfigDict(
-        from_attributes=True, exclude={"correct_answer", "updated_at", "created_at", "archived"}
-    )
+    model_config = {"from_attributes": True}
 
 
 class TestQuestionWithoutAnswerListResponse(BaseModel):
-    test_questions: list[TestQuestionWithoutAnswerResponse]
-    total: int
+    questions_list: list[TestQuestionWithoutAnswerResponse]
+    skip: int
+    limit: int
+
+
+class TestQuestionResponse(TestQuestionWithoutAnswerResponse):
+    correct_answer: str
+
+
+class TestQuestionListResponse(BaseModel):
+    questions_list: list[TestQuestionResponse]
+    total: int | None
     skip: int
     limit: int
 
@@ -66,8 +63,13 @@ class CheckAnswerResponse(BaseModel):
     correct_answer: str
 
 
+class CheckAnswerListResponse(BaseModel):
+    checked_answers: List[CheckAnswerResponse]
+
+
 class LessonEstimateResponse(BaseModel):
-    lesson_id: UUID
+    lesson_id: str
+    # lesson_id: UUID
     percentage: float
 
 
@@ -76,7 +78,8 @@ class TestQuestionCount(BaseModel):
 
 
 class TestQuestionsCountByLesson(BaseModel):
-    lesson_id: UUID
+    lesson_id: str
+    # lesson_id: UUID
     total: int
 
 

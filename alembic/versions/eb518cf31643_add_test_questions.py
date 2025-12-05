@@ -25,7 +25,7 @@ def upgrade() -> None:
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('desc', sa.Text(), nullable=True),
     sa.Column('question', sa.Text(), nullable=False),
-    sa.Column('choices', sa.JSON(sa.String()), nullable=False),
+    sa.Column('choices', sa.JSON(), nullable=False),
     sa.Column('correct_answer', sa.String(), nullable=False),
     sa.Column('lesson_id', sa.String(), nullable=False),
     sa.Column('uuid', sa.UUID(), nullable=False),

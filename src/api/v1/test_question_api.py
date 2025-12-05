@@ -9,7 +9,7 @@ from src.schemas.test_question_schema import (
     TestQuestionListResponse,
     TestQuestionWithoutAnswerListResponse,
     LessonAnswer,
-    CheckAnswerResponse,
+    CheckAnswerListResponse,
     LessonEstimateResponse,
     TestQuestionSearchParams
 )
@@ -18,7 +18,7 @@ from src.services.test_question_service import TestQuestionService, get_test_que
 router = APIRouter(prefix="/test_questions", tags=["test_questions"])
 
 
-@router.get("/", response_model=TestQuestionListResponse, summary="Получить все тесты")
+@router.get("/", response_model=TestQuestionListResponse, summary="Get all test questions")
 async def get_all_posts(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -26,10 +26,15 @@ async def get_all_posts(
 ):
     test_questions = await service.get_all_test_questions(skip, limit)
     total = await service.get_test_questions_count()
-    return TestQuestionListResponse(test_questions=test_questions, total=total, skip=skip, limit=limit)
+    return TestQuestionListResponse(
+        questions_list=test_questions,
+        total=total,
+        skip=skip,
+        limit=limit
+        )
 
 
-@router.get("/{test_question_id}", response_model=TestQuestionResponse, summary="Получить тест по ID")
+@router.get("/{test_question_id}", response_model=TestQuestionResponse, summary="Get test question by id")
 async def get_test_question_by_id(
     test_question_id: Any,
     service: TestQuestionService = Depends(get_test_question_service)
@@ -46,7 +51,7 @@ async def get_test_question_by_id(
     "/create",
     response_model=TestQuestionResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Создать тест"
+    summary="Create a new test question"
 )
 async def create_test_question(
     test_question_data: TestQuestionCreate,
@@ -59,7 +64,7 @@ async def create_test_question(
     "/bulk_create",
     response_model=List[TestQuestionResponse],
     status_code=status.HTTP_201_CREATED,
-    summary="Cоздать несколько тестов"
+    summary="Create multiple test questions"
 )
 async def create_multiple_test_questions(
     test_question_data: List[TestQuestionCreate],
@@ -68,7 +73,7 @@ async def create_multiple_test_questions(
     return await service.create_multiple_test_questions(test_question_data)
 
 
-@router.put("/update/{test_question_id}", response_model=TestQuestionResponse, summary="Обновить тест")
+@router.patch("/update/{test_question_id}", response_model=TestQuestionResponse, summary="Update test question by id")
 async def update_test_question(
     test_question_id: Any,
     update_data: TestQuestionUpdate,
@@ -86,9 +91,9 @@ async def update_test_question(
     return updated_data
 
 
-@router.put("/delete/{test_question_id}",
+@router.patch("/delete/{test_question_id}",
             status_code=status.HTTP_204_NO_CONTENT,
-            summary="Удалить тест")
+            summary="Delete test question by id")
 async def delete_test_question(
     test_question_id: Any,
     service: TestQuestionService = Depends(get_test_question_service)
@@ -98,10 +103,11 @@ async def delete_test_question(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Test question not found"
         )
+    return {"message": "Test question deleted successfully"}
 
 
 @router.post(
-    "/search", response_model=TestQuestionListResponse, summary="Найти тесты по названию"
+    "/search", response_model=TestQuestionListResponse, summary="Search test questions by name"
 )
 async def search_test_question_by_name(
     search_params: TestQuestionSearchParams,
@@ -112,7 +118,7 @@ async def search_test_question_by_name(
     )
     total = await service.get_test_questions_count()
     return TestQuestionListResponse(
-        test_questions=test_questions,
+        questions_list=test_questions,
         total=total,
         skip=search_params.skip,
         limit=search_params.limit,
@@ -120,9 +126,9 @@ async def search_test_question_by_name(
 
 
 @router.get(
-    "/{lesson_id}",
+    "/lesson/{lesson_id}",
     response_model=TestQuestionWithoutAnswerListResponse,
-    summary="Найти тесты по уроку"
+    summary="Get test questions by lesson id"
 )
 async def get_test_questions_by_lesson_id(
     lesson_id: Any,
@@ -130,38 +136,35 @@ async def get_test_questions_by_lesson_id(
     limit: int = Query(100, ge=1, le=1000),
     service: TestQuestionService = Depends(get_test_question_service)
 ):
-    test_questions = await service.get_test_questions_by_lesson_id(lesson_id, skip, limit)
-    total = await service.get_test_questions_count_by_lesson(lesson_id)
+    test_questions = await service.get_test_questions_by_lesson_id(lesson_id)
 
     return TestQuestionWithoutAnswerListResponse(
-        test_questions=test_questions, total=total, skip=skip, limit=limit
-    )
+        questions_list=test_questions,
+        skip=skip,
+        limit=limit,
+        )
 
 
 @router.post(
-    "/check", response_model=CheckAnswerResponse, summary="Проверить ответы"
+    "/check", response_model=CheckAnswerListResponse, summary="Check answers"
 )
 async def check_test(
     user_data: LessonAnswer,
     service: TestQuestionService = Depends(get_test_question_service)
 ):
-    res = await service.check_test(user_data.user_answers)
-    return CheckAnswerResponse(
-        uuid=res.uuid,
-        passed=res.passed,
-        correct_answer=res.correct_answer
-    )
+    res = await service.check_test(user_data)
+    return CheckAnswerListResponse(checked_answers=res)
 
 
 @router.post(
-    "/estimate/{lesson_id}", response_model=LessonEstimateResponse, summary="Получить оценку за тесты к уроку"
+    "/estimate/{lesson_id}", response_model=LessonEstimateResponse, summary="Get estimate by lesson id"
 )
 async def get_estimate_by_lesson(
     lesson_id: Any,
     user_data: LessonAnswer,
     service: TestQuestionService = Depends(get_test_question_service)
 ):
-    percentage = await service.get_estimate_by_lesson(lesson_id, user_data.user_answers)
+    percentage = await service.get_estimate_by_lesson(lesson_id, user_data)
     return LessonEstimateResponse(
         lesson_id=lesson_id,
         percentage=percentage
