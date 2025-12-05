@@ -23,6 +23,10 @@ class DBConfig(BaseModel):
             f"@{self.db_host}:{self.db_port}/{self.db_name}"
         )
 
+    @property
+    def dsn(self) -> str:
+        return self.dsl
+
 
 class AuthConfig(BaseModel):
     secret_key: str
