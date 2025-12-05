@@ -47,6 +47,7 @@ app.include_router(
 
 app.include_router(
     review_router,
-  prefix="/api/v1/reviews",
-   tags=["review"],
+    prefix="/api/v1/reviews",
+    tags=["review"],
 )
+
