@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.repositories.review import ReviewRepository
 from src.schemas.review_schema import ReviewCreate, ReviewResponse, ReviewUpdate
 from src.database import get_session
+from src.services.auth_service import AuthService, get_auth_service
 
 router = APIRouter()
 
@@ -37,9 +38,13 @@ async def get_reviews_for_course(
 async def create_review(
     data: ReviewCreate,
     repo: Annotated[ReviewRepository, Depends(get_review_repo)],
+    auth_service: AuthService = Depends(get_auth_service),
 ):
+    current_user = await auth_service.get_current_user()
+
     review = await repo.create(data)
     return review
+
 
 
 @router.patch(
@@ -51,8 +56,11 @@ async def update_review(
     review_id: int,
     data: ReviewUpdate,
     repo: Annotated[ReviewRepository, Depends(get_review_repo)],
+    auth_service: AuthService = Depends(get_auth_service),
     delete: bool = False,
 ):
+    current_user = await auth_service.get_current_user()
+
     review = await repo.get_by_id(review_id)
     if review is None or review.archived:
         raise HTTPException(
@@ -72,3 +80,4 @@ async def update_review(
         )
 
     return review
+
