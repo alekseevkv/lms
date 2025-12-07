@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 from uuid import UUID as PyUUID
 
 from sqlalchemy import ForeignKey, String, Text
@@ -24,6 +24,11 @@ class Lesson(Base, BaseModelMixin):
     
     # Relationship
     course: Mapped[Course] = relationship("Course", back_populates="lessons")
+    test_questions: Mapped[List["TestQuestion"]] = relationship( # noqa: F821 во избежание циклической зависимости
+        "TestQuestion", 
+        back_populates="lesson",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"Lesson(uuid={self.uuid}, name={self.name!r}, course_id={self.course_id})"

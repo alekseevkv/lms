@@ -8,7 +8,8 @@ from src.api.v1.course_api import router as course_router
 from src.api.v1.admin_api import router as admin_router
 from src.api.v1.test_question_api import router as test_question_router
 from src.api.v1.review_api import router as review_router
-
+from src.api.v1.lesson_api import router as lesson_router
+from src.api.v1.user_course_api import router as user_course_router
 from src.redis_client import set_redis_client
 
 from src.configs.app import settings
@@ -51,3 +52,5 @@ app.include_router(
     tags=["review"],
 )
 
+app.include_router(lesson_router, prefix="/api/v1/lessons",tags=["lessons"])
+app.include_router(user_course_router, prefix="/api/v1/user_courses", tags=["user_courses"])
