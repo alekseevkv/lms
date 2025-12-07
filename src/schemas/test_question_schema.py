@@ -8,8 +8,7 @@ class TestQuestionBase(BaseModel):
     desc: Optional[str] = None
     question: str
     choices: Dict[str,str]
-    lesson_id: str
-    # lesson_id: UUID
+    lesson_id: UUID
 
 
 class TestQuestionCreate(TestQuestionBase):
@@ -22,8 +21,7 @@ class TestQuestionUpdate(BaseModel):
     question: Optional[str] = None
     choices: Optional[dict[str,str]] = None
     correct_answer: Optional[str] = None
-    lesson_id: Optional[str] = None
-    # lesson_id: Optional[UUID] = None
+    lesson_id: Optional[UUID] = None
 
 
 class TestQuestionWithoutAnswerResponse(TestQuestionBase):
@@ -68,8 +66,7 @@ class CheckAnswerListResponse(BaseModel):
 
 
 class LessonEstimateResponse(BaseModel):
-    lesson_id: str
-    # lesson_id: UUID
+    lesson_id: UUID
     percentage: float
 
 
@@ -78,8 +75,7 @@ class TestQuestionCount(BaseModel):
 
 
 class TestQuestionsCountByLesson(BaseModel):
-    lesson_id: str
-    # lesson_id: UUID
+    lesson_id: UUID
     total: int
 
 

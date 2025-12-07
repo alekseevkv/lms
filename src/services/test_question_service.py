@@ -17,7 +17,7 @@ class TestQuestionService:
     def __init__(self, repo: TestQuestionRepository):
         self.repo = repo
 
-    async def get_test_question_by_id(self, test_question_id: Any) -> TestQuestionResponse:
+    async def get_test_question_by_id(self, test_question_id: Any) -> TestQuestionWithoutAnswerResponse:
         '''Получить тест по ID'''
         test_question = await self.repo.get_by_id(test_question_id)
         if not test_question:
@@ -25,7 +25,7 @@ class TestQuestionService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Test question not found",
             )
-        return TestQuestionResponse.model_validate(test_question)
+        return TestQuestionWithoutAnswerResponse.model_validate(test_question)
 
     async def get_all_test_questions(
         self, skip: int = 0, limit: int = 100
@@ -71,9 +71,15 @@ class TestQuestionService:
             )
         return TestQuestionResponse.model_validate(test_question)
 
-    async def delete_test_question(self, test_question_id: Any) -> bool:
+    async def delete_test_question(self, test_question_id: Any) -> None:
         '''Удалить тест'''
-        return await self.repo.delete(test_question_id)
+        res = await self.repo.delete(test_question_id)
+        if not res:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Test question not found",
+            )
+    
 
     async def search_test_question_by_name(self, name_pattern: str, skip: int, limit: int) -> List[TestQuestionResponse]:
         '''Поиск тестов по названию'''
