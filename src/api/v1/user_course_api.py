@@ -1,95 +1,144 @@
-from typing import Annotated, List
+from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from src.models.user import User
 from src.schemas.user_course_schema import (
-    CourseWithProgressResponse,
-    UserCourseDetailedResponse,
+    UserCourseListResponse,
+    UserCourseDetailResponse,
     UserCourseResponse,
-    UserCourseCreate,
-    StartLessonResponse,
-    CompleteLessonRequest
+    UserCourseProgressUpdate,
+    StartLessonResponse
 )
-from src.services.auth_service import AuthService, get_auth_service
 from src.services.user_course_servise import UserCourseService, get_user_course_service
+from src.services.auth_service import AuthService, get_auth_service
+from src.schemas.user_schema import UserRole
 
-router = APIRouter(prefix="/user_courses", tags=["user-courses"])
+
+router = APIRouter(prefix="/user_courses", tags=["user_courses"])
 
 
 @router.get(
     "/",
-    response_model=List[CourseWithProgressResponse],
-    summary="Get user courses with progress"
+    response_model=UserCourseListResponse,
+    summary="Get user's courses with progress"
 )
 async def get_user_courses(
-    skip: Annotated[int | None, Query(ge=0, description="Entries number to skip")] = 0,
-    limit: Annotated[
-        int | None, Query(ge=1, le=1000, description="Entries limit")
-    ] = 100,
     auth_service: AuthService = Depends(get_auth_service),
-    user_course_service: UserCourseService = Depends(get_user_course_service),
+    user_course_service: UserCourseService = Depends(get_user_course_service)
 ):
     """
-    Get all courses for current user with progress information
+    Получить список курсов пользователя с прогрессом
     
-    Returns list of courses with user's progress in each course
+    Возвращает:
+    - Список курсов с информацией о прогрессе
+    - Общее количество уроков в каждом курсе
+    - Количество пройденных уроков
+    - Общий прогресс в процентах
     """
     current_user = await auth_service.get_current_user()
     
-    courses = await user_course_service.get_user_courses(
-        current_user.uuid, skip=skip, limit=limit
-    )
-    return courses
+    # Проверяем, что пользователь студент
+    if UserRole.student not in current_user.roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can access their courses"
+        )
+    
+    return await user_course_service.get_user_courses(current_user.uuid)
 
 
 @router.get(
     "/{user_course_id}",
-    response_model=UserCourseDetailedResponse,
-    summary="Get user course details"
+    response_model=UserCourseDetailResponse,
+    summary="Get detailed user course information"
 )
-async def get_user_course(
+async def get_user_course_detail(
     user_course_id: UUID,
     auth_service: AuthService = Depends(get_auth_service),
-    user_course_service: UserCourseService = Depends(get_user_course_service),
+    user_course_service: UserCourseService = Depends(get_user_course_service)
 ):
     """
-    Get detailed information about user's course
+    Получить детальную информацию о курсе пользователя
     
-    Returns:
-    - User course information
-    - Course details
-    - List of lessons with progress for each lesson
+    Возвращает:
+    - Информацию о курсе
+    - Список уроков с прогрессом по каждому уроку
     """
     current_user = await auth_service.get_current_user()
     
-    course_data = await user_course_service.get_user_course_by_id(
-        user_course_id, current_user
+    # Проверяем, что пользователь студент
+    if UserRole.student not in current_user.roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can access their courses"
+        )
+    
+    return await user_course_service.get_user_course_detail(
+        user_course_id, 
+        current_user.uuid
     )
-    return course_data
 
 
 @router.post(
     "/enroll/{course_id}",
     response_model=UserCourseResponse,
-    summary="Enroll in a course",
+    summary="Enroll user in a course",
     status_code=status.HTTP_201_CREATED
 )
 async def enroll_in_course(
     course_id: UUID,
     auth_service: AuthService = Depends(get_auth_service),
-    user_course_service: UserCourseService = Depends(get_user_course_service),
+    user_course_service: UserCourseService = Depends(get_user_course_service)
 ):
     """
-    Enroll current user in a course
+    Записать пользователя на курс
     
-    Creates a new user_course record with initial progress
+    Если пользователь уже записан на курс, возвращает существующую запись
     """
     current_user = await auth_service.get_current_user()
     
-    user_course = await user_course_service.enroll_in_course(course_id, current_user)
-    return user_course
+    # Проверяем, что пользователь студент
+    if UserRole.student not in current_user.roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can enroll in courses"
+        )
+    
+    return await user_course_service.enroll_in_course(current_user.uuid, course_id)
+
+
+@router.post(
+    "/{user_course_id}/progress",
+    response_model=UserCourseResponse,
+    summary="Update lesson progress"
+)
+async def update_lesson_progress(
+    user_course_id: UUID,
+    progress_update: UserCourseProgressUpdate,
+    auth_service: AuthService = Depends(get_auth_service),
+    user_course_service: UserCourseService = Depends(get_user_course_service)
+):
+    """
+    Обновить прогресс по уроку
+    
+    Используется после прохождения теста для сохранения оценки
+    Урок считается пройденным, если по нему была отправлена оценка (estimate > 0)
+    """
+    current_user = await auth_service.get_current_user()
+    
+    # Проверяем, что пользователь студент
+    if UserRole.student not in current_user.roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can update progress"
+        )
+    
+    return await user_course_service.update_lesson_progress(
+        user_course_id,
+        current_user.uuid,
+        progress_update
+    )
 
 
 @router.post(
@@ -100,60 +149,50 @@ async def enroll_in_course(
 async def start_lesson(
     lesson_id: UUID,
     auth_service: AuthService = Depends(get_auth_service),
-    user_course_service: UserCourseService = Depends(get_user_course_service),
+    user_course_service: UserCourseService = Depends(get_user_course_service)
 ):
     """
-    Mark a lesson as started for current user
+    Начать прохождение урока
     
-    Returns the lesson with progress information
+    Если пользователь не записан на курс, содержащий урок, 
+    автоматически записывает его на курс
     """
     current_user = await auth_service.get_current_user()
     
-    result = await user_course_service.start_lesson(lesson_id, current_user)
-    return result
-
-
-@router.post(
-    "/lessons/{lesson_id}/complete",
-    summary="Complete a lesson with test results"
-)
-async def complete_lesson(
-    lesson_id: UUID,
-    request: CompleteLessonRequest,
-    auth_service: AuthService = Depends(get_auth_service),
-    user_course_service: UserCourseService = Depends(get_user_course_service),
-):
-    """
-    Complete a lesson with test estimate
+    # Проверяем, что пользователь студент
+    if UserRole.student not in current_user.roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can start lessons"
+        )
     
-    Lesson is considered completed when test is submitted (regardless of answers)
-    
-    - **estimate**: Optional score from 0 to 100
-    """
-    current_user = await auth_service.get_current_user()
-    
-    result = await user_course_service.complete_lesson(lesson_id, request, current_user)
-    return result
+    return await user_course_service.start_lesson(current_user.uuid, lesson_id)
 
 
 @router.get(
-    "/stats/my",
-    summary="Get user course statistics"
+    "/lessons/{lesson_id}/progress",
+    summary="Get user's progress for a specific lesson"
 )
-async def get_user_course_stats(
+async def get_lesson_progress(
+    lesson_id: UUID,
     auth_service: AuthService = Depends(get_auth_service),
-    user_course_service: UserCourseService = Depends(get_user_course_service),
+    user_course_service: UserCourseService = Depends(get_user_course_service)
 ):
     """
-    Get statistics about user's courses progress
+    Получить прогресс пользователя по конкретному уроку
     
-    Returns:
-    - Total courses
-    - Completed courses
-    - Courses in progress
-    - Average progress
+    Возвращает:
+    - started: начат ли урок
+    - estimate: оценка (если есть)
+    - completed: пройден ли урок
     """
     current_user = await auth_service.get_current_user()
     
-    stats = await user_course_service.get_user_course_stats(current_user.uuid)
-    return stats
+    # Проверяем, что пользователь студент
+    if UserRole.student not in current_user.roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can check lesson progress"
+        )
+    
+    return await user_course_service.get_lesson_progress(current_user.uuid, lesson_id)
