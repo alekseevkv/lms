@@ -1,28 +1,26 @@
 from typing import Any
+from uuid import UUID
 
-from sqlalchemy import Column, String, Text, ForeignKey, JSON
-from sqlalchemy.orm import relationship
+from sqlalchemy import String, Text, ForeignKey, JSON
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from .base import Base, BaseModelMixin
+from .lesson import Lesson
 
 
 class TestQuestion(Base, BaseModelMixin):
     __tablename__ = "test_questions"
 
-    name = Column(String, nullable=False, unique=True)
-    desc = Column(Text)
-    question = Column(Text, nullable=False)
-    choices = Column(JSON(String), nullable=False)
-    correct_answer = Column(String, nullable=False)
-    lesson_id = Column(String, nullable=False)
-    # когда появится урок
-    # lesson_id = Column(
-    #     UUID(as_uuid=True),
-    #     ForeignKey("lesson.uuid", ondelete="SET NULL"),
-    #     nullable=True,
-    # )
-
-    # lesson = relationship("Lesson", back_populates="test_questions")
+    name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    desc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    choices: Mapped[dict[str,str]] = mapped_column(JSON, nullable=False)
+    correct_answer: Mapped[str] = mapped_column(String, nullable=False)
+    lesson_id: Mapped[UUID] = mapped_column(
+        ForeignKey("lessons.uuid", ondelete="CASCADE"),
+        nullable=False
+    )
+    lesson: Mapped[Lesson] = relationship("Lesson", back_populates="test_questions")
 
     def __repr__(self) -> str:
         return (

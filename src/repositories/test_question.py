@@ -1,7 +1,7 @@
-from typing import Any, List, Optional, Dict
+from typing import Any, List, Dict, Sequence
 
 from fastapi import Depends
-from sqlalchemy import select, func
+from sqlalchemy import select, func, not_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_session
@@ -12,33 +12,33 @@ class TestQuestionRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, question_id: Any) -> Optional[TestQuestion]:
+    async def get_by_id(self, question_id: Any) -> TestQuestion | None:
         '''Получить тест по ID'''
         result = await self.db.execute(select(TestQuestion).where(TestQuestion.uuid == question_id))
         return result.scalar_one_or_none()
 
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[TestQuestion]:
+    async def get_all(self, skip: int = 0, limit: int = 100) -> Sequence[TestQuestion]:
         '''Получить все тесты'''
         result = await self.db.execute(select(TestQuestion).offset(skip).limit(limit))
         return result.scalars().all()
 
-    async def get_by_lesson_id(self, lesson_id: str) -> List[TestQuestion] | None:
+    async def get_by_lesson_id(self, lesson_id: str) -> Sequence[TestQuestion] | None:
         '''Получить тесты по ID урока'''
-        result = await self.db.execute(select(TestQuestion).where(TestQuestion.lesson_id == lesson_id, TestQuestion.archived == False))
+        result = await self.db.execute(select(TestQuestion).where(TestQuestion.lesson_id == lesson_id, not_(TestQuestion.archived)))
         return result.scalars().all()
 
-    async def get_count(self) -> int:
+    async def get_count(self) -> int | None:
         '''Получить общее количество тестов'''
         result = await self.db.execute(select(func.count(TestQuestion.uuid)).where(
-            TestQuestion.archived == False)
+            not_(TestQuestion.archived))
         )
         return result.scalar()
 
-    async def get_count_by_lesson(self, lesson_id: Any) -> int:
+    async def get_count_by_lesson(self, lesson_id: Any) -> int | None:
         '''Получить количество тестов в уроке'''
         result = await self.db.execute(
             select(func.count(TestQuestion.uuid)).where(
-                TestQuestion.lesson_id == lesson_id, TestQuestion.archived == False)
+                TestQuestion.lesson_id == lesson_id, not_(TestQuestion.archived))
         )
         return result.scalar()
 
@@ -64,7 +64,7 @@ class TestQuestionRepository:
 
         return test_questions
 
-    async def update(self, test_question_id: Any, test_question_data: Dict[str, Any]) -> TestQuestion:
+    async def update(self, test_question_id: Any, test_question_data: Dict[str, Any]) -> TestQuestion | None:
         '''Обновить тест'''
         test_question = await self.get_by_id(test_question_id)
         if test_question:
@@ -74,25 +74,25 @@ class TestQuestionRepository:
             await self.db.refresh(test_question)
         return test_question
 
-    async def delete(self, test_question_id: Any) -> bool:
+    async def delete(self, test_question_id: Any) -> TestQuestion | None:
         '''Удалить тест'''
         test_question = await self.get_by_id(test_question_id)
         if test_question:
             test_question.archived = True
             await self.db.commit()
-            return True
-        return False
+            await self.db.refresh(test_question)
+        return test_question
 
-    async def get_correct_answer(self, question_id: int) -> Optional[str]:
+    async def get_correct_answer(self, question_id: Any) -> str | None:
         '''Получить правильный ответ по ID'''
         result = await self.db.execute(
             select(TestQuestion.correct_answer).where(
-                TestQuestion.id == question_id)
+                TestQuestion.uuid == question_id)
         )
         question = result.first()
         return question[0] if question else None
 
-    async def check_answer(self, question_id: int, user_answer: str) -> bool:
+    async def check_answer(self, question_id: Any, user_answer: str) -> bool:
         '''Проверить ответ пользователя на вопрос'''
         correct_answer = await self.get_correct_answer(question_id)
         return correct_answer is not None and user_answer.strip().lower() == correct_answer.strip().lower()
@@ -113,16 +113,16 @@ class TestQuestionRepository:
 
         return results
 
-    async def calculate_estimate(self, lesson_id: int, user_answers: List[Dict[str, Any]]) -> int:
+    async def calculate_estimate(self, lesson_id: int, user_answers: List[Dict[str, Any]]) -> float:
         '''Рассчитать оценку (%) для урока'''
         total_questions = await self.get_count_by_lesson(lesson_id)
-        if total_questions == 0:
+        if total_questions is None:
             return 0
 
         total_correct = 0
         results = await self.bulk_check_answers(user_answers)
         for result in results:
-            if result["passed"] == True:
+            if result["passed"]:
                 total_correct += 1
 
         percentage = (total_correct / total_questions) * 100
@@ -130,7 +130,7 @@ class TestQuestionRepository:
 
     async def search_by_name(
         self, name_pattern: str, skip: int = 0, limit: int = 100
-    ) -> list[TestQuestion]:
+    ) -> Sequence[TestQuestion]:
         '''Найти по имени'''
         result = await self.db.execute(
             select(TestQuestion)

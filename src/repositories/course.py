@@ -1,8 +1,8 @@
 from collections.abc import Sequence
-from typing import Any, Coroutine
+from typing import Any
 
 from fastapi import Depends
-from sqlalchemy import select
+from sqlalchemy import not_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_session
@@ -14,7 +14,9 @@ class CourseRepository:
         self.db = db
 
     async def get_by_id(self, course_id: Any) -> Course | None:
-        result = await self.db.execute(select(Course).where(Course.uuid == course_id))
+        result = await self.db.execute(
+            select(Course).where(Course.uuid == course_id, not_(Course.archived))
+        )
 
         return result.scalar_one_or_none()
 
@@ -30,7 +32,9 @@ class CourseRepository:
     async def get_all(
         self, skip: int | None = 0, limit: int | None = 100
     ) -> Sequence[Course]:
-        result = await self.db.execute(select(Course).offset(skip).limit(limit))
+        result = await self.db.execute(
+            select(Course).where(not_(Course.archived)).offset(skip).limit(limit)
+        )
 
         return result.scalars().all()
 
@@ -53,7 +57,6 @@ class CourseRepository:
         await self.db.commit()
         await self.db.refresh(course)
         return course
-
 
     async def delete(self, course_id: Any) -> Course | None:
         course = await self.get_by_id(course_id)

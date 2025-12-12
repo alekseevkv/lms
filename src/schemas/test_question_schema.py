@@ -1,52 +1,51 @@
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict
-from typing import Optional, List
+from datetime import datetime
+from pydantic import BaseModel
+from typing import Optional, List, Dict
 
 
 class TestQuestionBase(BaseModel):
     name: str
     desc: Optional[str] = None
     question: str
-    choices: List[str]
-    correct_answer: str
+    choices: Dict[str,str]
     lesson_id: UUID
 
 
 class TestQuestionCreate(TestQuestionBase):
-    pass
+    correct_answer: str
 
 
-class TestQuestionUpdate(TestQuestionBase):
+class TestQuestionUpdate(BaseModel):
     name: Optional[str] = None
     desc: Optional[str] = None
     question: Optional[str] = None
-    choices: Optional[List[str]] = None
+    choices: Optional[dict[str,str]] = None
     correct_answer: Optional[str] = None
     lesson_id: Optional[UUID] = None
 
 
-class TestQuestionResponse(TestQuestionBase):
+class TestQuestionWithoutAnswerResponse(TestQuestionBase):
     uuid: UUID
     model_config = {"from_attributes": True}
 
 
-class TestQuestionListResponse(BaseModel):
-    test_questions: list[TestQuestionResponse]
-    total: int
+class TestQuestionWithoutAnswerListResponse(BaseModel):
+    questions_list: list[TestQuestionWithoutAnswerResponse]
     skip: int
     limit: int
 
 
-class TestQuestionWithoutAnswerResponse(TestQuestionBase):
-    uuid: UUID
-    model_config = ConfigDict(
-        from_attributes=True, exclude={"correct_answer", "updated_at", "created_at", "archived"}
-    )
+class TestQuestionResponse(TestQuestionWithoutAnswerResponse):
+    correct_answer: str
+    create_at: datetime
+    update_at: datetime
+    archived: bool
 
 
-class TestQuestionWithoutAnswerListResponse(BaseModel):
-    test_questions: list[TestQuestionWithoutAnswerResponse]
-    total: int
+class TestQuestionListResponse(BaseModel):
+    questions_list: list[TestQuestionResponse]
+    total: int | None
     skip: int
     limit: int
 
@@ -64,6 +63,10 @@ class CheckAnswerResponse(BaseModel):
     uuid: UUID
     passed: bool
     correct_answer: str
+
+
+class CheckAnswerListResponse(BaseModel):
+    checked_answers: List[CheckAnswerResponse]
 
 
 class LessonEstimateResponse(BaseModel):

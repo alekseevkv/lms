@@ -1,11 +1,11 @@
-from typing import Any
+from typing import Any, List
 
 from sqlalchemy import String
 from sqlalchemy.dialects.postgresql import ARRAY
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, BaseModelMixin
-
+#from .user_course import UserCourse
 
 class User(Base, BaseModelMixin):
     __tablename__ = "users"
@@ -16,7 +16,12 @@ class User(Base, BaseModelMixin):
     roles: Mapped[list[str]] = mapped_column(
         ARRAY(String), nullable=False, default=list
     )
-
+    
+    user_courses: Mapped[List["UserCourse"]] = relationship(  # noqa: F821
+        "UserCourse",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
     def __repr__(self) -> str:
         return (
             f"User(uuid={self.uuid}, username={self.username}, "
