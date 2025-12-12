@@ -24,11 +24,10 @@ async def get_review_repo(
     summary="Get reviews for course",
 )
 async def get_reviews_for_course(
-    course_id: int,
+    course_id: UUID,
     repo: Annotated[ReviewRepository, Depends(get_review_repo)],
 ):
-    reviews = await repo.get_by_course(course_id)
-    return reviews
+    return await repo.get_by_course(course_id)
 
 
 @router.post(
@@ -42,11 +41,13 @@ async def create_review(
     repo: Annotated[ReviewRepository, Depends(get_review_repo)],
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    current_user = await auth_service.get_current_user()
 
-
-    _current_user = await auth_service.get_current_user()
-
-    review = await repo.create(data)
+    review = await repo.create(
+        user_id=current_user.uuid,
+        course_id=data.course_id,
+        content=data.content,
+    )
     return review
 
 
