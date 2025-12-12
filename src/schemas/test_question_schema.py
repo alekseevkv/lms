@@ -1,4 +1,5 @@
 from uuid import UUID
+from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 
@@ -37,6 +38,9 @@ class TestQuestionWithoutAnswerListResponse(BaseModel):
 
 class TestQuestionResponse(TestQuestionWithoutAnswerResponse):
     correct_answer: str
+    create_at: datetime
+    update_at: datetime
+    archived: bool
 
 
 class TestQuestionListResponse(BaseModel):

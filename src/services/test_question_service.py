@@ -143,11 +143,6 @@ class TestQuestionService:
         for ans in user_answers.user_answers:
             answers.append(ans.model_dump())
         percentage = await self.repo.calculate_estimate(lesson_id, answers)
-        if not percentage:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Test questions not found",
-            )
         return percentage
 
     async def test_question_exists(self, test_question_id: Any) -> bool:
