@@ -24,7 +24,12 @@ class TestQuestionRepository:
 
     async def get_by_lesson_id(self, lesson_id: str) -> Sequence[TestQuestion] | None:
         '''Получить тесты по ID урока'''
-        result = await self.db.execute(select(TestQuestion).where(TestQuestion.lesson_id == lesson_id, not_(TestQuestion.archived)))
+        result = await self.db.execute(
+            select(TestQuestion)
+            .where(
+                TestQuestion.lesson_id == lesson_id,
+                not_(TestQuestion.archived))
+                .order_by(TestQuestion.question_num))
         return result.scalars().all()
 
     async def get_count(self) -> int | None:
@@ -127,18 +132,6 @@ class TestQuestionRepository:
 
         percentage = (total_correct / total_questions) * 100
         return percentage
-
-    async def search_by_name(
-        self, name_pattern: str, skip: int = 0, limit: int = 100
-    ) -> Sequence[TestQuestion]:
-        '''Найти по имени'''
-        result = await self.db.execute(
-            select(TestQuestion)
-            .where(TestQuestion.name.ilike(f"%{name_pattern}%"))
-            .offset(skip)
-            .limit(limit)
-        )
-        return result.scalars().all()
 
     async def exists_by_id(self, test_question_id: Any) -> bool:
         test_question = await self.get_by_id(test_question_id)

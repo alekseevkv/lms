@@ -79,17 +79,6 @@ class TestQuestionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Test question not found",
             )
-    
-
-    async def search_test_question_by_name(self, name_pattern: str, skip: int, limit: int) -> List[TestQuestionResponse]:
-        '''Поиск тестов по названию'''
-        test_questions = await self.repo.search_by_name(name_pattern, skip, limit)
-        if not test_questions:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Test question not found",
-            )
-        return [TestQuestionResponse.model_validate(test_question) for test_question in test_questions]
 
     async def get_test_questions_by_lesson_id(self, lesson_id: Any) -> List[TestQuestionWithoutAnswerResponse]:
         '''Получить тесты для урока'''

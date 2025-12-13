@@ -5,7 +5,7 @@ from typing import Optional, List, Dict
 
 
 class TestQuestionBase(BaseModel):
-    name: str
+    question_num: int
     desc: Optional[str] = None
     question: str
     choices: Dict[str,str]
@@ -17,7 +17,7 @@ class TestQuestionCreate(TestQuestionBase):
 
 
 class TestQuestionUpdate(BaseModel):
-    name: Optional[str] = None
+    question_num: Optional[int] = None
     desc: Optional[str] = None
     question: Optional[str] = None
     choices: Optional[dict[str,str]] = None
@@ -81,9 +81,3 @@ class TestQuestionCount(BaseModel):
 class TestQuestionsCountByLesson(BaseModel):
     lesson_id: UUID
     total: int
-
-
-class TestQuestionSearchParams(BaseModel):
-    name_pattern: str
-    skip: int = 0
-    limit: int = 100
