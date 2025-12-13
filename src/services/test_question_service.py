@@ -80,17 +80,6 @@ class TestQuestionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Test question not found",
             )
-    
-
-    async def search_test_question_by_name(self, name_pattern: str, skip: int, limit: int) -> List[TestQuestionResponse]:
-        '''Поиск тестов по названию'''
-        test_questions = await self.repo.search_by_name(name_pattern, skip, limit)
-        if not test_questions:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Test question not found",
-            )
-        return [TestQuestionResponse.model_validate(test_question) for test_question in test_questions]
 
     async def get_test_questions_by_lesson_id(self, lesson_id: Any) -> List[TestQuestionWithoutAnswerResponse]:
         '''Получить тесты для урока'''
@@ -144,11 +133,6 @@ class TestQuestionService:
         for ans in user_answers.user_answers:
             answers.append(ans.model_dump())
         percentage = await self.repo.calculate_estimate(lesson_id, answers)
-        if not percentage:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Test questions not found",
-            )
         return percentage
 
     async def test_question_exists(self, test_question_id: Any) -> bool:

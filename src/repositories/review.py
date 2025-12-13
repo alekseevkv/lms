@@ -1,4 +1,5 @@
 from typing import Any, Sequence
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,9 +12,9 @@ class ReviewRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, review_id: Any) -> Review | None:
+    async def get_by_id(self, review_uuid: Any) -> Review | None:
         result = await self.db.execute(
-            select(Review).where(Review.id == review_id)
+            select(Review).where(Review.uuid == review_uuid)
         )
         return result.scalar_one_or_none()
 
@@ -31,9 +32,9 @@ class ReviewRepository:
         )
         return result.scalars().all()
 
-    async def create(self, data: ReviewCreate) -> Review:
+    async def create(self, user_id: UUID, data: ReviewCreate) -> Review:
         review = Review(
-            user_id=data.user_id,
+            user_id=user_id,
             course_id=data.course_id,
             content=data.content,
         )
@@ -42,8 +43,8 @@ class ReviewRepository:
         await self.db.refresh(review)
         return review
 
-    async def update(self, review_id: Any, data: ReviewUpdate) -> Review | None:
-        review = await self.get_by_id(review_id)
+    async def update(self, review_uuid: Any, data: ReviewUpdate) -> Review | None:
+        review = await self.get_by_id(review_uuid)
         if not review:
             return None
 
@@ -54,8 +55,8 @@ class ReviewRepository:
         await self.db.refresh(review)
         return review
 
-    async def delete(self, review_id: Any) -> Review | None:
-        review = await self.get_by_id(review_id)
+    async def delete(self, review_uuid: Any) -> Review | None:
+        review = await self.get_by_id(review_uuid)
         if not review:
             return None
 

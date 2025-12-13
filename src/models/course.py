@@ -26,6 +26,13 @@ class Course(Base, BaseModelMixin):
         back_populates="course",
         cascade="all, delete-orphan"
     )
+
+    reviews: Mapped[List["Review"]] = relationship(  # noqa: F821
+        "Review",
+        back_populates="course",
+        cascade="all, delete-orphan",
+    )
+
     def __repr__(self) -> str:
         return f"Course(uuid={self.uuid}, name={self.name!r}, desc={self.desc!r})"
 

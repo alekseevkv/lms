@@ -13,8 +13,7 @@ from src.schemas.test_question_schema import (
     TestQuestionWithoutAnswerListResponse,
     LessonAnswer,
     CheckAnswerListResponse,
-    LessonEstimateResponse,
-    TestQuestionSearchParams
+    LessonEstimateResponse
 )
 from src.schemas.user_schema import UserRole
 from src.services.auth_service import AuthService, get_auth_service
@@ -28,12 +27,15 @@ router = APIRouter(tags=["test_questions"])
 
 
 @router.get("/", response_model=TestQuestionListResponse, summary="Get all test questions")
-async def get_all_posts(
+async def get_all_test_questions(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Получить все существующие тестовые вопросы
+    """
     current_user = await auth_service.get_current_user()
 
     if UserRole.admin not in current_user.roles:
@@ -58,6 +60,9 @@ async def get_test_question_by_id(
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Получить тестовый вопрос по ID
+    """
     await auth_service.get_current_user()
     test_question = await service.get_test_question_by_id(test_question_id)
     if not test_question:
@@ -78,6 +83,9 @@ async def create_test_question(
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Создать тестовый вопрос
+    """
     current_user = await auth_service.get_current_user()
 
     if UserRole.admin not in current_user.roles:
@@ -100,6 +108,9 @@ async def create_multiple_test_questions(
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Создать несколько тестовых вопросов
+    """
     current_user = await auth_service.get_current_user()
 
     if UserRole.admin not in current_user.roles:
@@ -118,6 +129,9 @@ async def update_test_question(
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Обновить тестовый вопрос
+    """
     current_user = await auth_service.get_current_user()
 
     if UserRole.admin not in current_user.roles:
@@ -146,6 +160,9 @@ async def delete_test_question(
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Удалить тестовый вопрос (мягкое удаление, archived - True)
+    """
     current_user = await auth_service.get_current_user()
 
     if UserRole.admin not in current_user.roles:
@@ -155,33 +172,6 @@ async def delete_test_question(
         )
     await service.delete_test_question(test_question_id)
     return {"message": "Test question deleted successfully"}
-
-
-@router.post(
-    "/search", response_model=TestQuestionListResponse, summary="Search test questions by name"
-)
-async def search_test_question_by_name(
-    search_params: TestQuestionSearchParams,
-    service: TestQuestionService = Depends(get_test_question_service),
-    auth_service: AuthService = Depends(get_auth_service),
-):
-    current_user = await auth_service.get_current_user()
-
-    if UserRole.admin not in current_user.roles:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Search is only available to admin",
-        )
-    test_questions = await service.search_test_question_by_name(
-        search_params.name_pattern, search_params.skip, search_params.limit
-    )
-    total = await service.get_test_questions_count()
-    return TestQuestionListResponse(
-        questions_list=test_questions,
-        total=total,
-        skip=search_params.skip,
-        limit=search_params.limit,
-    )
 
 
 @router.get(
@@ -196,6 +186,9 @@ async def get_test_questions_by_lesson_id(
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Получить тест к уроку (тестовые вопросы по порядку, т.е. осортированные по question_num)
+    """
     await auth_service.get_current_user()
     test_questions = await service.get_test_questions_by_lesson_id(lesson_id)
 
@@ -328,6 +321,9 @@ async def get_estimate_by_lesson(
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Получить оценку к уроку
+    """
     await auth_service.get_current_user()
     percentage = await service.get_estimate_by_lesson(lesson_id, user_data)
     return LessonEstimateResponse(

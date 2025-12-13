@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import String, Text, ForeignKey, JSON
+from sqlalchemy import String, Text, ForeignKey, JSON, Integer
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from .base import Base, BaseModelMixin
@@ -11,7 +11,7 @@ from .lesson import Lesson
 class TestQuestion(Base, BaseModelMixin):
     __tablename__ = "test_questions"
 
-    name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    question_num: Mapped[int] = mapped_column(Integer, nullable=False)
     desc: Mapped[str | None] = mapped_column(Text, nullable=True)
     question: Mapped[str] = mapped_column(Text, nullable=False)
     choices: Mapped[dict[str,str]] = mapped_column(JSON, nullable=False)
@@ -24,7 +24,7 @@ class TestQuestion(Base, BaseModelMixin):
 
     def __repr__(self) -> str:
         return (
-            f"uuid - {self.uuid}, name - {self.name}, desc - {self.desc}, "
+            f"uuid - {self.uuid}, question_num - {self.question_num}, desc - {self.desc}, "
             f"question - {self.question}, choices - {self.choices}, "
             f"correct_answer - {self.correct_answer}, lesson_id - {self.lesson_id}"
         )
@@ -32,7 +32,7 @@ class TestQuestion(Base, BaseModelMixin):
     def to_dict(self) -> dict[str, Any]:
         return {
             "uuid": self.uuid,
-            "name": self.name,
+            "question_num": self.question_num,
             "desc": self.desc,
             "question": self.question,
             "choices": self.choices,
