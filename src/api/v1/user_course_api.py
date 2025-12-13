@@ -15,8 +15,7 @@ from src.services.auth_service import AuthService, get_auth_service
 from src.schemas.user_schema import UserRole
 
 
-router = APIRouter(prefix="/user_courses", tags=["user_courses"])
-
+router = APIRouter(tags=["user_courses"])
 
 @router.get(
     "/",
@@ -39,11 +38,11 @@ async def get_user_courses(
     current_user = await auth_service.get_current_user()
     
     # Проверяем, что пользователь студент
-    if UserRole.student not in current_user.roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only students can access their courses"
-        )
+    #if UserRole.student not in current_user.roles:
+        #raise HTTPException(
+            #status_code=status.HTTP_403_FORBIDDEN,
+            #detail="Only students can access their courses"
+        #)
     
     return await user_course_service.get_user_courses(current_user.uuid)
 
@@ -68,11 +67,11 @@ async def get_user_course_detail(
     current_user = await auth_service.get_current_user()
     
     # Проверяем, что пользователь студент
-    if UserRole.student not in current_user.roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only students can access their courses"
-        )
+    #if UserRole.student not in current_user.roles:
+        #raise HTTPException(
+            #status_code=status.HTTP_403_FORBIDDEN,
+            #detail="Only students can access their courses"
+        #)
     
     return await user_course_service.get_user_course_detail(
         user_course_id, 
@@ -99,11 +98,11 @@ async def enroll_in_course(
     current_user = await auth_service.get_current_user()
     
     # Проверяем, что пользователь студент
-    if UserRole.student not in current_user.roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only students can enroll in courses"
-        )
+    #if UserRole.student not in current_user.roles:
+        #raise HTTPException(
+           # status_code=status.HTTP_403_FORBIDDEN,
+           # detail="Only students can enroll in courses"
+        #)
     
     return await user_course_service.enroll_in_course(current_user.uuid, course_id)
 
@@ -127,11 +126,10 @@ async def update_lesson_progress(
     """
     current_user = await auth_service.get_current_user()
     
-    # Проверяем, что пользователь студент
-    if UserRole.student not in current_user.roles:
+    if UserRole.admin not in current_user.roles:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only students can update progress"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only admin can update lesson progress",
         )
     
     return await user_course_service.update_lesson_progress(
@@ -160,11 +158,11 @@ async def start_lesson(
     current_user = await auth_service.get_current_user()
     
     # Проверяем, что пользователь студент
-    if UserRole.student not in current_user.roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only students can start lessons"
-        )
+    #if UserRole.student not in current_user.roles:
+        #raise HTTPException(
+            #status_code=status.HTTP_403_FORBIDDEN,
+            #detail="Only students can start lessons"
+        #)
     
     return await user_course_service.start_lesson(current_user.uuid, lesson_id)
 
@@ -189,10 +187,10 @@ async def get_lesson_progress(
     current_user = await auth_service.get_current_user()
     
     # Проверяем, что пользователь студент
-    if UserRole.student not in current_user.roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only students can check lesson progress"
-        )
+    #if UserRole.student not in current_user.roles:
+        #raise HTTPException(
+            #status_code=status.HTTP_403_FORBIDDEN,
+            #detail="Only students can check lesson progress"
+        #)
     
     return await user_course_service.get_lesson_progress(current_user.uuid, lesson_id)

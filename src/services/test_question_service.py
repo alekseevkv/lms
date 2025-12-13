@@ -1,4 +1,5 @@
 from typing import List, Optional, Any
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 
@@ -154,7 +155,35 @@ class TestQuestionService:
         '''Проверить существование теста'''
         return await self.repo.exists_by_id(test_question_id)
 
+    # новое
+    async def get_lesson_id_by_question_id(self, question_id: UUID) -> Optional[UUID]:
+        """Получить ID урока по ID вопроса"""
+        return await self.repo.get_lesson_id_by_question_id(question_id)
 
+    async def get_lesson_ids_by_question_ids(self, question_ids: List[UUID]) -> List[UUID]:
+        """Получить ID уроков по списку ID вопросов"""
+        return await self.repo.get_lesson_ids_by_question_ids(question_ids)
+
+    async def validate_questions_belong_to_same_lesson(self, question_ids: List[UUID]) -> UUID:
+        """
+        Проверить, что все вопросы принадлежат одному уроку
+        Возвращает ID урока, если все вопросы из одного урока
+        """
+        lesson_ids = await self.get_lesson_ids_by_question_ids(question_ids)
+        
+        if not lesson_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No questions found",
+            )
+        
+        if len(lesson_ids) > 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Questions belong to different lessons: {lesson_ids}",
+            )
+        
+        return lesson_ids[0]
 async def get_test_question_service(
     repo: TestQuestionRepository = Depends(get_test_question_repository),
 ) -> TestQuestionService:

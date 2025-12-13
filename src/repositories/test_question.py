@@ -1,4 +1,5 @@
-from typing import Any, List, Dict, Sequence
+from typing import Any, List, Dict, Sequence, Optional
+from uuid import UUID
 
 from fastapi import Depends
 from sqlalchemy import select, func, not_
@@ -143,7 +144,26 @@ class TestQuestionRepository:
     async def exists_by_id(self, test_question_id: Any) -> bool:
         test_question = await self.get_by_id(test_question_id)
         return test_question is not None
+    
+    #новое
+    async def get_lesson_id_by_question_id(self, question_id: UUID) -> Optional[UUID]:
+        """Получить ID урока по ID вопроса"""
+        result = await self.db.execute(
+            select(TestQuestion.lesson_id).where(TestQuestion.uuid == question_id)
+        )
+        return result.scalar_one_or_none()
 
+    async def get_lesson_ids_by_question_ids(self, question_ids: List[UUID]) -> List[UUID]:
+        """Получить ID уроков по списку ID вопросов"""
+        if not question_ids:
+            return []
+        
+        result = await self.db.execute(
+            select(TestQuestion.lesson_id)
+            .where(TestQuestion.uuid.in_(question_ids))
+            .distinct()
+        )
+        return list(result.scalars().all())
 
 async def get_test_question_repository(
     db: AsyncSession = Depends(get_session),
