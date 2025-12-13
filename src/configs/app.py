@@ -24,6 +24,13 @@ class DBConfig(BaseModel):
         )
 
     @property
+    def dsl_test(self):
+        return (
+            f"postgresql+asyncpg://{self.db_user}:{self.db_password}"
+            f"@localhost:{self.db_port}/{self.db_name}"
+        )
+
+    @property
     def dsn(self) -> str:
         return self.dsl
 
