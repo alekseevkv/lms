@@ -69,3 +69,20 @@ async def access_token(aiohttp_client, user_payload: Dict[str, str]) -> Dict[str
     content = await response.json()
 
     return content
+
+@pytest.fixture
+def admin_payload() -> Dict[str, str]:
+    return {"email": "admin@example.com", "password": "stringQwerty1!"}
+
+@pytest_asyncio.fixture
+async def access_token_admin(aiohttp_client, admin_payload: Dict[str, str]) -> Dict[str, str]:
+    """Получение токена админа"""
+
+    req_url = "/api/v1/auth/signup-admin"
+    await aiohttp_client.post(req_url, json=admin_payload)
+
+    req_url = "/api/v1/auth/signin"
+    response = await aiohttp_client.post(req_url, json=admin_payload)
+    content = await response.json()
+
+    return content
