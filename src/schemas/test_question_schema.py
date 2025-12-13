@@ -1,15 +1,22 @@
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel
-from typing import Optional, List, Dict
+from pydantic import BaseModel, field_validator
+from typing import Optional, List
 
 
 class TestQuestionBase(BaseModel):
     question_num: int
     desc: Optional[str] = None
     question: str
-    choices: Dict[str,str]
+    choices: List[str]
     lesson_id: UUID
+
+    @field_validator('question_num')
+    @classmethod
+    def validate_num(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError('Question number must be larger than 0')
+        return v
 
 
 class TestQuestionCreate(TestQuestionBase):
@@ -20,9 +27,16 @@ class TestQuestionUpdate(BaseModel):
     question_num: Optional[int] = None
     desc: Optional[str] = None
     question: Optional[str] = None
-    choices: Optional[dict[str,str]] = None
+    choices: Optional[List[str]] = None
     correct_answer: Optional[str] = None
     lesson_id: Optional[UUID] = None
+
+    @field_validator('question_num')
+    @classmethod
+    def validate_num(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError('Question number must be larger than 0')
+        return v
 
 
 class TestQuestionWithoutAnswerResponse(TestQuestionBase):

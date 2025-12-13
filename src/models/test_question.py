@@ -1,7 +1,7 @@
-from typing import Any
+from typing import Any, List
 from uuid import UUID
 
-from sqlalchemy import String, Text, ForeignKey, JSON, Integer
+from sqlalchemy import String, Text, ForeignKey, ARRAY, Integer
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from .base import Base, BaseModelMixin
@@ -14,7 +14,7 @@ class TestQuestion(Base, BaseModelMixin):
     question_num: Mapped[int] = mapped_column(Integer, nullable=False)
     desc: Mapped[str | None] = mapped_column(Text, nullable=True)
     question: Mapped[str] = mapped_column(Text, nullable=False)
-    choices: Mapped[dict[str,str]] = mapped_column(JSON, nullable=False)
+    choices: Mapped[List[str]] = mapped_column(ARRAY(String), nullable=False)
     correct_answer: Mapped[str] = mapped_column(String, nullable=False)
     lesson_id: Mapped[UUID] = mapped_column(
         ForeignKey("lessons.uuid", ondelete="CASCADE"),

@@ -1,4 +1,5 @@
-from typing import Any, List
+from typing import List
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -56,7 +57,7 @@ async def get_all_test_questions(
 
 @router.get("/{test_question_id}", response_model=TestQuestionWithoutAnswerResponse, summary="Get test question by id")
 async def get_test_question_by_id(
-    test_question_id: Any,
+    test_question_id: UUID,
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
@@ -124,7 +125,7 @@ async def create_multiple_test_questions(
 
 @router.patch("/update/{test_question_id}", response_model=TestQuestionResponse, summary="Update test question by id")
 async def update_test_question(
-    test_question_id: Any,
+    test_question_id: UUID,
     update_data: TestQuestionUpdate,
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
@@ -153,10 +154,9 @@ async def update_test_question(
 
 
 @router.patch("/delete/{test_question_id}",
-            status_code=status.HTTP_204_NO_CONTENT,
             summary="Delete test question by id")
 async def delete_test_question(
-    test_question_id: Any,
+    test_question_id: UUID,
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
@@ -180,14 +180,14 @@ async def delete_test_question(
     summary="Get test questions by lesson id"
 )
 async def get_test_questions_by_lesson_id(
-    lesson_id: Any,
+    lesson_id: UUID,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """
-    Получить тест к уроку (тестовые вопросы по порядку, т.е. осортированные по question_num)
+    Получить тест к уроку без ответов (тестовые вопросы отсортированы по порядку)
     """
     await auth_service.get_current_user()
     test_questions = await service.get_test_questions_by_lesson_id(lesson_id)
@@ -199,18 +199,6 @@ async def get_test_questions_by_lesson_id(
         )
 
 
-#@router.post(
-#    "/check", response_model=CheckAnswerListResponse, summary="Check answers"
-#)
-
-#async def check_test(
-#    user_data: LessonAnswer,
-#    service: TestQuestionService = Depends(get_test_question_service),
-#    auth_service: AuthService = Depends(get_auth_service),
-#):
-#    await auth_service.get_current_user()
-#    res = await service.check_test(user_data)
-#    return CheckAnswerListResponse(checked_answers=res)
 @router.post(
     "/check", 
     response_model=CheckAnswerListResponse, 
@@ -316,7 +304,7 @@ async def check_test(
     "/estimate/{lesson_id}", response_model=LessonEstimateResponse, summary="Get estimate by lesson id"
 )
 async def get_estimate_by_lesson(
-    lesson_id: Any,
+    lesson_id: UUID,
     user_data: LessonAnswer,
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),

@@ -42,6 +42,14 @@ class TestQuestionService:
 
     async def create_test_question(self, test_question_data: TestQuestionCreate) -> TestQuestionResponse:
         '''Создать новый тест'''
+        if await self.repo.exists_by_num_in_lesson(
+            test_question_data.question_num, 
+            test_question_data.lesson_id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Question with this order number already exists in this lesson",
+            )
         test_question_dict = test_question_data.model_dump()
         test_question = await self.repo.create(test_question_dict)
         return TestQuestionResponse.model_validate(test_question)
@@ -50,6 +58,16 @@ class TestQuestionService:
         self, test_questions_data: List[TestQuestionCreate]
     ) -> List[TestQuestionResponse]:
         '''Создать несколько тестов'''
+        for test_question_data in test_questions_data:
+            if await self.repo.exists_by_num_in_lesson(
+                test_question_data.question_num, 
+                test_question_data.lesson_id
+            ):
+                raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Question with order number {test_question_data.question_num} already exists in lesson {test_question_data.lesson_id}",
+            )
+
         test_questions_dict = [
             test_question_data.model_dump() for test_question_data in test_questions_data]
         test_questions = await self.repo.create_many(test_questions_dict)

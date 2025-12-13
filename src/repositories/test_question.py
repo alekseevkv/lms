@@ -157,6 +157,16 @@ class TestQuestionRepository:
             .distinct()
         )
         return list(result.scalars().all())
+    
+    async def exists_by_num_in_lesson(self, question_num: int, lesson_id: Any) -> bool:
+        result = await self.db.execute(
+            select(TestQuestion).where(
+                TestQuestion.question_num == question_num,
+                TestQuestion.lesson_id == lesson_id,
+                not_(TestQuestion.archived)
+            )
+        )
+        return result.scalar_one_or_none() is not None
 
 async def get_test_question_repository(
     db: AsyncSession = Depends(get_session),
