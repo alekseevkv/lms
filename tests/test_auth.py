@@ -469,17 +469,23 @@ class TestAuth:
         "query_data, expected_data",
         [
             (
-                {"req_url": "/api/v1/auth/change-password"},
+                {
+                    "req_url": "/api/v1/auth/change-password",
+                    "method": "post",
+                },
                 {
                     "status": HTTPStatus.FORBIDDEN,
                     "detail": f"Not authenticated",
                 },
             ),
             (
-                {"req_url": "/api/v1/auth/users"},
                 {
-                    "status": HTTPStatus.METHOD_NOT_ALLOWED,
-                    "detail": f"Method Not Allowed",
+                    "req_url": "/api/v1/auth/users",
+                    "method": "patch",
+                },
+                {
+                    "status": HTTPStatus.FORBIDDEN,
+                    "detail": f"Not authenticated",
                 },
             ),
         ],
@@ -487,7 +493,10 @@ class TestAuth:
     @pytest.mark.asyncio
     async def test_not_authorization(self, query_data, expected_data, aiohttp_client):
         """Тесты без авторизации"""
-        response = await aiohttp_client.post(query_data["req_url"], json={})
+        if query_data["method"] == "post":
+            response = await aiohttp_client.post(query_data["req_url"], json={})
+        elif query_data["method"] == "patch":
+            response = await aiohttp_client.patch(query_data["req_url"], json={})
 
         assert response.status == expected_data["status"]
 
