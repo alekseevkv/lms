@@ -1,42 +1,36 @@
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, field_validator
-from typing import Optional, List
+from pydantic import BaseModel, Field, BeforeValidator
+from typing import Optional, List, Annotated
+
+def non_empty_str(v: str) -> str:
+    if not v.strip():
+            raise ValueError("String can't be empty")
+    return v
+
+NonEmptyStr = Annotated[str, Field(min_length=1), BeforeValidator(non_empty_str)]
+PositiveInt = Annotated[int, Field(gt=0)]
 
 
 class TestQuestionBase(BaseModel):
-    question_num: int
+    question_num: PositiveInt
     desc: Optional[str] = None
-    question: str
-    choices: List[str]
+    question: NonEmptyStr
+    choices: List[NonEmptyStr]
     lesson_id: UUID
-
-    @field_validator('question_num')
-    @classmethod
-    def validate_num(cls, v: int) -> int:
-        if v <= 0:
-            raise ValueError('Question number must be larger than 0')
-        return v
 
 
 class TestQuestionCreate(TestQuestionBase):
-    correct_answer: str
+    correct_answer: NonEmptyStr
 
 
 class TestQuestionUpdate(BaseModel):
-    question_num: Optional[int] = None
+    question_num: Optional[PositiveInt] = None
     desc: Optional[str] = None
-    question: Optional[str] = None
-    choices: Optional[List[str]] = None
-    correct_answer: Optional[str] = None
+    question: Optional[NonEmptyStr] = None
+    choices: Optional[List[NonEmptyStr]] = None
+    correct_answer: Optional[NonEmptyStr] = None
     lesson_id: Optional[UUID] = None
-
-    @field_validator('question_num')
-    @classmethod
-    def validate_num(cls, v: int) -> int:
-        if v <= 0:
-            raise ValueError('Question number must be larger than 0')
-        return v
 
 
 class TestQuestionWithoutAnswerResponse(TestQuestionBase):
@@ -66,7 +60,7 @@ class TestQuestionListResponse(BaseModel):
 
 class TestQuestionAnswer(BaseModel):
     uuid: UUID
-    user_answer: str
+    user_answer: NonEmptyStr
 
 
 class LessonAnswer(BaseModel):
