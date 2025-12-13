@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from src.schemas.course_schema import CourseBase, CourseUpdate
+from src.schemas.course_schema import CourseBase, CourseUpdate, CourseResponse
 from src.schemas.user_schema import UpdateUserByAdminRequest, UserResponse, UserRole
 from src.services.auth_service import AuthService, get_auth_service
 from src.services.course_service import CourseService, get_course_service
@@ -11,7 +11,11 @@ from src.services.user_service import UserService, get_user_service
 router = APIRouter()
 
 
-@router.post("/course", summary="Create a new course")
+@router.post(
+    "/course",
+    response_model=CourseResponse,
+    summary="Create a new course"
+)
 async def add_course(
     course_date: CourseBase,
     service: CourseService = Depends(get_course_service),
@@ -30,7 +34,11 @@ async def add_course(
     return res
 
 
-@router.patch("/course/{course_id}/update", summary="Update a course by id")
+@router.patch(
+    "/course/{course_id}/update",
+    response_model=CourseResponse,
+    summary="Update a course by id"
+)
 async def update_course(
     course_id: UUID,
     course_date: CourseUpdate,
