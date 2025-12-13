@@ -14,7 +14,7 @@ class ReviewRepository:
 
     async def get_by_id(self, review_uuid: Any) -> Review | None:
         result = await self.db.execute(
-            select(Review).where(Review.uuid == str(review_uuid))
+            select(Review).where(Review.uuid == review_uuid)
         )
         return result.scalar_one_or_none()
 
@@ -32,9 +32,9 @@ class ReviewRepository:
         )
         return result.scalars().all()
 
-    async def create(self, data: ReviewCreate) -> Review:
+    async def create(self, user_id: UUID, data: ReviewCreate) -> Review:
         review = Review(
-            user_id=data.user_id,
+            user_id=user_id,
             course_id=data.course_id,
             content=data.content,
         )

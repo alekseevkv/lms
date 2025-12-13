@@ -45,8 +45,7 @@ async def create_review(
 
     review = await repo.create(
         user_id=current_user.uuid,
-        course_id=data.course_id,
-        content=data.content,
+        data=data,
     )
     return review
 

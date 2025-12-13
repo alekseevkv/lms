@@ -9,14 +9,14 @@ class ReviewBase(BaseModel):
 
 
 class ReviewCreate(ReviewBase):
-    course_id: int
-    user_id: int
+    course_id: UUID
+    #user_id:
 
 
 class ReviewResponse(ReviewBase):
     uuid: UUID
-    user_id: int
-    course_id: int
+    user_id: UUID
+    course_id: UUID
 
     model_config = {"from_attributes": True}
 
