@@ -475,7 +475,7 @@ class TestAuth:
                 },
                 {
                     "status": HTTPStatus.FORBIDDEN,
-                    "detail": f"Not authenticated",
+                    "detail": "Not authenticated",
                 },
             ),
             (
@@ -485,7 +485,7 @@ class TestAuth:
                 },
                 {
                     "status": HTTPStatus.FORBIDDEN,
-                    "detail": f"Not authenticated",
+                    "detail": "Not authenticated",
                 },
             ),
         ],
