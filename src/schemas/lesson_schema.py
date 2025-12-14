@@ -9,7 +9,7 @@ class LessonBase(BaseModel):
     name: str
     desc: Optional[str] = None
     content: str
-    video_url: Optional[HttpUrl] = None
+    video_url: Optional[str] = None #было Optional[HttpUrl]
     course_id: UUID
 
 
@@ -33,7 +33,8 @@ class LessonResponse(LessonBase):
     model_config = {"from_attributes": True}
 
 
-class LessonVideoResponse(BaseModel):
+# было class LessonVideoResponse(BaseModel):
+class LessonVideoResponse(LessonBase):
     uuid: UUID
     name: str
     video_url: Optional[str] = None

@@ -1,4 +1,5 @@
-from typing import Any, List, Dict, Sequence
+from typing import Any, List, Dict, Sequence, Optional
+from uuid import UUID
 
 from fastapi import Depends
 from sqlalchemy import select, func, not_
@@ -24,7 +25,12 @@ class TestQuestionRepository:
 
     async def get_by_lesson_id(self, lesson_id: str) -> Sequence[TestQuestion] | None:
         '''Получить тесты по ID урока'''
-        result = await self.db.execute(select(TestQuestion).where(TestQuestion.lesson_id == lesson_id, not_(TestQuestion.archived)))
+        result = await self.db.execute(
+            select(TestQuestion)
+            .where(
+                TestQuestion.lesson_id == lesson_id,
+                not_(TestQuestion.archived))
+                .order_by(TestQuestion.question_num))
         return result.scalars().all()
 
     async def get_count(self) -> int | None:
@@ -128,22 +134,39 @@ class TestQuestionRepository:
         percentage = (total_correct / total_questions) * 100
         return percentage
 
-    async def search_by_name(
-        self, name_pattern: str, skip: int = 0, limit: int = 100
-    ) -> Sequence[TestQuestion]:
-        '''Найти по имени'''
-        result = await self.db.execute(
-            select(TestQuestion)
-            .where(TestQuestion.name.ilike(f"%{name_pattern}%"))
-            .offset(skip)
-            .limit(limit)
-        )
-        return result.scalars().all()
-
     async def exists_by_id(self, test_question_id: Any) -> bool:
         test_question = await self.get_by_id(test_question_id)
         return test_question is not None
+    
+    #новое
+    async def get_lesson_id_by_question_id(self, question_id: UUID) -> Optional[UUID]:
+        """Получить ID урока по ID вопроса"""
+        result = await self.db.execute(
+            select(TestQuestion.lesson_id).where(TestQuestion.uuid == question_id)
+        )
+        return result.scalar_one_or_none()
 
+    async def get_lesson_ids_by_question_ids(self, question_ids: List[UUID]) -> List[UUID]:
+        """Получить ID уроков по списку ID вопросов"""
+        if not question_ids:
+            return []
+        
+        result = await self.db.execute(
+            select(TestQuestion.lesson_id)
+            .where(TestQuestion.uuid.in_(question_ids))
+            .distinct()
+        )
+        return list(result.scalars().all())
+    
+    async def exists_by_num_in_lesson(self, question_num: int, lesson_id: Any) -> bool:
+        result = await self.db.execute(
+            select(TestQuestion).where(
+                TestQuestion.question_num == question_num,
+                TestQuestion.lesson_id == lesson_id,
+                not_(TestQuestion.archived)
+            )
+        )
+        return result.scalar_one_or_none() is not None
 
 async def get_test_question_repository(
     db: AsyncSession = Depends(get_session),

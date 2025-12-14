@@ -1,5 +1,6 @@
 import re
 from enum import Enum
+from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, field_validator, model_validator
 
@@ -48,6 +49,14 @@ class UserResponse(UserBase):
     model_config = {"from_attributes": True}
 
 
+class UserResponseWithId(UserBase):
+    uuid: UUID
+    username: str | None = None
+    roles: list[str] = []
+
+    model_config = {"from_attributes": True}
+
+
 class UserSignupRequest(UserBase):
     password: str
 
@@ -87,3 +96,7 @@ class UpdateUserByAdminRequest(UserBase):
     new_email: EmailStr | None = None
     username: str | None = None
     roles: list[UserRole] | None = None
+
+
+class DeleteUserByAdminResponse(BaseModel):
+    msg: str

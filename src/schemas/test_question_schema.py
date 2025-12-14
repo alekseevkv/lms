@@ -1,27 +1,41 @@
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel
-from typing import Optional, List, Dict
+from pydantic import BaseModel, Field, BeforeValidator, model_validator, ConfigDict
+from typing import Optional, List, Annotated
+
+def non_empty_str(v: str) -> str:
+    if not v.strip():
+            raise ValueError("String can't be empty")
+    return v
+
+NonEmptyStr = Annotated[str, Field(min_length=1), BeforeValidator(non_empty_str)]
+PositiveInt = Annotated[int, Field(gt=0)]
 
 
 class TestQuestionBase(BaseModel):
-    name: str
+    question_num: PositiveInt
     desc: Optional[str] = None
-    question: str
-    choices: Dict[str,str]
+    question: NonEmptyStr
+    choices: List[NonEmptyStr]
     lesson_id: UUID
 
-
 class TestQuestionCreate(TestQuestionBase):
-    correct_answer: str
+    correct_answer: NonEmptyStr
+    model_config = ConfigDict(validate_assignment=True)
+
+    @model_validator(mode='after')
+    def validate_answer(self) -> 'TestQuestionCreate':
+        if self.correct_answer.strip() not in [choice.strip() for choice in self.choices]:
+            raise ValueError(f"Answer {self.correct_answer} must be among the choices {self.choices}")
+        return self
 
 
 class TestQuestionUpdate(BaseModel):
-    name: Optional[str] = None
+    question_num: Optional[PositiveInt] = None
     desc: Optional[str] = None
-    question: Optional[str] = None
-    choices: Optional[dict[str,str]] = None
-    correct_answer: Optional[str] = None
+    question: Optional[NonEmptyStr] = None
+    choices: Optional[List[NonEmptyStr]] = None
+    correct_answer: Optional[NonEmptyStr] = None
     lesson_id: Optional[UUID] = None
 
 
@@ -52,7 +66,7 @@ class TestQuestionListResponse(BaseModel):
 
 class TestQuestionAnswer(BaseModel):
     uuid: UUID
-    user_answer: str
+    user_answer: NonEmptyStr
 
 
 class LessonAnswer(BaseModel):
@@ -81,9 +95,3 @@ class TestQuestionCount(BaseModel):
 class TestQuestionsCountByLesson(BaseModel):
     lesson_id: UUID
     total: int
-
-
-class TestQuestionSearchParams(BaseModel):
-    name_pattern: str
-    skip: int = 0
-    limit: int = 100

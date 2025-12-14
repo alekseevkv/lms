@@ -1,7 +1,10 @@
-from typing import Any, List
+from typing import List
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.database import get_session
 from src.schemas.test_question_schema import (
     TestQuestionCreate,
     TestQuestionUpdate,
@@ -11,23 +14,29 @@ from src.schemas.test_question_schema import (
     TestQuestionWithoutAnswerListResponse,
     LessonAnswer,
     CheckAnswerListResponse,
-    LessonEstimateResponse,
-    TestQuestionSearchParams
+    LessonEstimateResponse
 )
 from src.schemas.user_schema import UserRole
 from src.services.auth_service import AuthService, get_auth_service
 from src.services.test_question_service import TestQuestionService, get_test_question_service
 from src.services.user_course_servise import UserCourseService, get_user_course_service
-router = APIRouter(prefix="/test_questions", tags=["test_questions"])
+from src.repositories.course import CourseRepository, get_course_repository
+from src.repositories.user_course import UserCourseRepository, get_user_course_repository
+from src.repositories.lesson import LessonRepository, get_lesson_repository
+
+router = APIRouter(tags=["test_questions"])
 
 
 @router.get("/", response_model=TestQuestionListResponse, summary="Get all test questions")
-async def get_all_posts(
+async def get_all_test_questions(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Получить все существующие тестовые вопросы
+    """
     current_user = await auth_service.get_current_user()
 
     if UserRole.admin not in current_user.roles:
@@ -48,10 +57,13 @@ async def get_all_posts(
 
 @router.get("/{test_question_id}", response_model=TestQuestionWithoutAnswerResponse, summary="Get test question by id")
 async def get_test_question_by_id(
-    test_question_id: Any,
+    test_question_id: UUID,
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Получить тестовый вопрос по ID
+    """
     await auth_service.get_current_user()
     test_question = await service.get_test_question_by_id(test_question_id)
     if not test_question:
@@ -72,6 +84,9 @@ async def create_test_question(
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Создать тестовый вопрос
+    """
     current_user = await auth_service.get_current_user()
 
     if UserRole.admin not in current_user.roles:
@@ -94,6 +109,9 @@ async def create_multiple_test_questions(
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Создать несколько тестовых вопросов
+    """
     current_user = await auth_service.get_current_user()
 
     if UserRole.admin not in current_user.roles:
@@ -107,11 +125,14 @@ async def create_multiple_test_questions(
 
 @router.patch("/update/{test_question_id}", response_model=TestQuestionResponse, summary="Update test question by id")
 async def update_test_question(
-    test_question_id: Any,
+    test_question_id: UUID,
     update_data: TestQuestionUpdate,
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Обновить тестовый вопрос
+    """
     current_user = await auth_service.get_current_user()
 
     if UserRole.admin not in current_user.roles:
@@ -133,13 +154,15 @@ async def update_test_question(
 
 
 @router.patch("/delete/{test_question_id}",
-            status_code=status.HTTP_204_NO_CONTENT,
             summary="Delete test question by id")
 async def delete_test_question(
-    test_question_id: Any,
+    test_question_id: UUID,
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Удалить тестовый вопрос (мягкое удаление, archived - True)
+    """
     current_user = await auth_service.get_current_user()
 
     if UserRole.admin not in current_user.roles:
@@ -151,45 +174,21 @@ async def delete_test_question(
     return {"message": "Test question deleted successfully"}
 
 
-@router.post(
-    "/search", response_model=TestQuestionListResponse, summary="Search test questions by name"
-)
-async def search_test_question_by_name(
-    search_params: TestQuestionSearchParams,
-    service: TestQuestionService = Depends(get_test_question_service),
-    auth_service: AuthService = Depends(get_auth_service),
-):
-    current_user = await auth_service.get_current_user()
-
-    if UserRole.admin not in current_user.roles:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Search is only available to admin",
-        )
-    test_questions = await service.search_test_question_by_name(
-        search_params.name_pattern, search_params.skip, search_params.limit
-    )
-    total = await service.get_test_questions_count()
-    return TestQuestionListResponse(
-        questions_list=test_questions,
-        total=total,
-        skip=search_params.skip,
-        limit=search_params.limit,
-    )
-
-
 @router.get(
     "/lesson/{lesson_id}",
     response_model=TestQuestionWithoutAnswerListResponse,
     summary="Get test questions by lesson id"
 )
 async def get_test_questions_by_lesson_id(
-    lesson_id: Any,
+    lesson_id: UUID,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Получить тест к уроку без ответов (тестовые вопросы отсортированы по порядку)
+    """
     await auth_service.get_current_user()
     test_questions = await service.get_test_questions_by_lesson_id(lesson_id)
 
@@ -200,18 +199,6 @@ async def get_test_questions_by_lesson_id(
         )
 
 
-#@router.post(
-#    "/check", response_model=CheckAnswerListResponse, summary="Check answers"
-#)
-
-#async def check_test(
-#    user_data: LessonAnswer,
-#    service: TestQuestionService = Depends(get_test_question_service),
-#    auth_service: AuthService = Depends(get_auth_service),
-#):
-#    await auth_service.get_current_user()
-#    res = await service.check_test(user_data)
-#    return CheckAnswerListResponse(checked_answers=res)
 @router.post(
     "/check", 
     response_model=CheckAnswerListResponse, 
@@ -221,58 +208,110 @@ async def check_test(
     user_data: LessonAnswer,
     auth_service: AuthService = Depends(get_auth_service),
     test_service: TestQuestionService = Depends(get_test_question_service),
-    user_course_service: UserCourseService = Depends(get_user_course_service)
+    db: AsyncSession = Depends(get_session),  # Добавляем прямую зависимость от сессии БД
 ):
     """
-    Проверить ответы на тест и обновить прогресс пользователя
+    Проверить ответы на тест и обновить прогресс
     
-    После проверки автоматически обновляет прогресс по уроку
-    Урок считается пройденным при любой отправке теста
+    Автоматически определяет lesson_id из вопросов
     """
     current_user = await auth_service.get_current_user()
     
     # Проверяем ответы
-    res = await test_service.check_test(user_data)
+    checked_answers = await test_service.check_test(user_data)
     
-    # Если есть ответы, получаем lesson_id из первого вопроса
-    if res and user_data.user_answers:
-        # Получаем первый вопрос для определения урока
+    # Если пользователь не студент, просто возвращаем результаты
+    if UserRole.student not in current_user.roles:
+        return CheckAnswerListResponse(checked_answers=checked_answers)
+    
+    if not user_data.user_answers:
+        return CheckAnswerListResponse(checked_answers=checked_answers)
+    
+    try:
+        # 1. Определяем lesson_id по первому вопросу
         first_question_id = user_data.user_answers[0].uuid
+        lesson_id = await test_service.get_lesson_id_by_question_id(first_question_id)
         
-        # Получаем информацию о вопросе для определения урока
-        # (нужно будет добавить метод в репозиторий)
-        # Временно получаем lesson_id из параметров запроса или другого источника
+        if not lesson_id:
+            return CheckAnswerListResponse(
+                checked_answers=checked_answers,
+                #metadata={"error": "Could not determine lesson from questions"}
+            )
         
-        # Рассчитываем процент правильных ответов
+        # 2. Рассчитываем процент
         total_questions = len(user_data.user_answers)
-        correct_answers = sum(1 for item in res if item.passed)
-        percentage = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
+        correct_answers = sum(1 for item in checked_answers if item.passed)
+        percentage = (correct_answers / total_questions) * 100
         
-        # Здесь нужно найти user_course_id для этого урока
-        # Для примера, предполагаем, что lesson_id передается в запросе
-        # В реальном приложении нужно добавить этот параметр
+        # 3. Создаем необходимые репозитории
+        from src.repositories.user_course import UserCourseRepository
+        from src.repositories.lesson import LessonRepository
+        from src.repositories.course import CourseRepository
         
-        # Пример обновления прогресса:
-        # await user_course_service.update_lesson_progress(
-        #     user_course_id=...,
-        #     user_id=current_user.uuid,
-        #     progress_update=UserCourseProgressUpdate(
-        #         lesson_id=lesson_id,
-        #         estimate=percentage
-        #     )
-        # )
-    
-    return CheckAnswerListResponse(checked_answers=res)
+        user_course_repo = UserCourseRepository(db)
+        lesson_repo = LessonRepository(db)
+        course_repo = CourseRepository(db)
+        
+        # 4. Получаем информацию об уроке
+        from src.services.lesson_service import LessonService
+        lesson_service = LessonService(lesson_repo)
+        
+        lesson = await lesson_service.get_by_id(lesson_id, video_only=False)
+        course_id = lesson.course_id
+        
+        # 5. Ищем user_course
+        user_course = await user_course_repo.get_by_user_and_course(
+            user_id=current_user.uuid,
+            course_id=course_id
+        )
+        
+        if user_course:
+            # 6. Обновляем прогресс напрямую через репозиторий
+            await user_course_repo.update_progress(
+                user_course_id=user_course.uuid,
+                lesson_id=lesson_id,
+                estimate=percentage
+            )
+            
+            return CheckAnswerListResponse(
+                checked_answers=checked_answers,
+                #metadata={
+                    #"lesson_id": str(lesson_id),
+                    #"percentage": percentage,
+                    #"progress_updated": True
+                #}
+            )
+        else:
+            # Если user_course не найден, пользователь не записан на курс
+            return CheckAnswerListResponse(
+                checked_answers=checked_answers,
+                #metadata={
+                    #"lesson_id": str(lesson_id),
+                    #"percentage": percentage,
+                    #"progress_updated": False,
+                    #"message": "User not enrolled in course. Start the lesson first."
+                #}
+            )
+            
+    except Exception as e:
+        # Если что-то пошло не так, все равно возвращаем результаты теста
+        return CheckAnswerListResponse(
+            checked_answers=checked_answers,
+            #metadata={"error": f"Progress update failed: {str(e)}"}
+        )
 
 @router.post(
     "/estimate/{lesson_id}", response_model=LessonEstimateResponse, summary="Get estimate by lesson id"
 )
 async def get_estimate_by_lesson(
-    lesson_id: Any,
+    lesson_id: UUID,
     user_data: LessonAnswer,
     service: TestQuestionService = Depends(get_test_question_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    """
+    Получить оценку к уроку
+    """
     await auth_service.get_current_user()
     percentage = await service.get_estimate_by_lesson(lesson_id, user_data)
     return LessonEstimateResponse(

@@ -35,6 +35,8 @@ class AuthService:
 
         if not user:
             return None
+        if user.archived is True:
+            raise HTTPException(status_code=400, detail="Inactive user")
         if not self.verify_password(password, user.password):
             return None
         return user

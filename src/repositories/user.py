@@ -1,8 +1,9 @@
+from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import not_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +31,15 @@ class UserRepository:
         result = await self.db.execute(select(User).where(User.email == email))
 
         return result.scalar_one_or_none()
+
+    async def get_all_active(
+        self, skip: int | None = 0, limit: int | None = 100
+    ) -> Sequence[User]:
+        result = await self.db.execute(
+            select(User).where(not_(User.archived)).offset(skip).limit(limit)
+        )
+
+        return result.scalars().all()
 
     async def update_password(self, user: User, hashed_password: str) -> None:
         user.password = hashed_password
