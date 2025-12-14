@@ -49,6 +49,25 @@ class TestAdmin:
             assert content["detail"][0]["msg"] == "Field required"
 
     @pytest.mark.asyncio
+    async def test_create_course_not_desc(self, aiohttp_client, async_session, access_token_admin):
+        """Тест /api/v1/admin/course: создание курса без наименования"""
+        token = access_token_admin
+
+        req_url = f"/api/v1/admin/course"
+        payload = {"name":"Наименование курса"}
+        response = await aiohttp_client.post(
+            req_url,
+            json=payload,
+            headers={"Authorization": f"Bearer {token['access_token']}"},
+        )
+
+        assert response.status == HTTPStatus.UNPROCESSABLE_CONTENT
+
+        if response.status == HTTPStatus.UNPROCESSABLE_CONTENT:
+            content = await response.json()
+            assert content["detail"][0]["msg"] == "Field required"
+
+    @pytest.mark.asyncio
     async def test_create_course_double(self, aiohttp_client, async_session, access_token_admin):
         """Тест /api/v1/admin/course: создание уже существующего курса"""
         course = Course(name="Наименование курса", desc=f"Описание курса")
@@ -176,7 +195,7 @@ class TestAdmin:
 
 
     @pytest.mark.asyncio
-    async def test_update_delete(self, aiohttp_client, async_session, access_token_admin):
+    async def test_course_delete(self, aiohttp_client, async_session, access_token_admin):
         """Тест /api/v1/admin/course/{course_id}/delete: удаление курса"""
         course = Course(name="Наименование курса", desc=f"Описание курса")
         async_session.add(course)
@@ -195,11 +214,10 @@ class TestAdmin:
 
         if response.status == HTTPStatus.OK:
             content = await response.json()
-            print(content)
             assert content["message"] == "Course delete successfully"
 
     @pytest.mark.asyncio
-    async def test_delete_course(
+    async def test_delete_course_error(
         self, aiohttp_client, async_session, access_token_admin
     ):
         """Тест /api/v1/admin/course/{course_id}/delete: неверный uuid курса"""
