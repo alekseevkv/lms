@@ -1,9 +1,11 @@
 from typing import Any, Sequence
 from uuid import UUID
 
+from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.database import get_session
 from src.models import Review
 from src.schemas.review_schema import ReviewCreate, ReviewUpdate
 
@@ -64,3 +66,8 @@ class ReviewRepository:
         await self.db.commit()
         await self.db.refresh(review)
         return review
+
+async def get_review_repository(
+    db: AsyncSession = Depends(get_session),
+) -> ReviewRepository:
+    return ReviewRepository(db)
