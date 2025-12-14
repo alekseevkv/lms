@@ -694,8 +694,8 @@ class TestTestQuestion:
             headers={"Authorization": f"Bearer {token['access_token']}"},
         )
 
-        assert response.status == HTTPStatus.NOT_FOUND
+        assert response.status == HTTPStatus.BAD_REQUEST
 
-        if response.status == HTTPStatus.NOT_FOUND:
+        if response.status == HTTPStatus.BAD_REQUEST:
             content = await response.json()
-            print(content)
+            assert content["detail"] == "Lesson with this ID does not exist"
