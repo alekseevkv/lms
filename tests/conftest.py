@@ -86,3 +86,33 @@ async def access_token_admin(aiohttp_client, admin_payload: Dict[str, str]) -> D
     content = await response.json()
 
     return content
+
+@pytest_asyncio.fixture
+async def create_lesson(aiohttp_client, access_token_admin: Dict[str, str]) -> Dict[str, str]:
+    token = access_token_admin
+
+    req_url = f"/api/v1/admin/course"
+    payload = {"name": "Наименование курса", "desc": "Описание курса"}
+    response = await aiohttp_client.post(
+        req_url,
+        json=payload,
+        headers={"Authorization": f"Bearer {token['access_token']}"},
+    )
+    course = await response.json()
+
+    req_url = f"/api/v1/lessons/create/"
+    payload = {
+        "name": "Первый урок",
+        "desc": "Описание урока",
+        "content": "Контент урока",
+        "video_url": "http://example.com/jrn3o",
+        "course_id": course["uuid"],
+    }
+
+    response = await aiohttp_client.post(
+        req_url,
+        json=payload,
+        headers={"Authorization": f"Bearer {token['access_token']}"},
+    )
+    lesson = await response.json()
+    return lesson
