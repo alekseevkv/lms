@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, status
 
 from src.repositories.test_question import TestQuestionRepository, get_test_question_repository
+from src.repositories.lesson import LessonRepository, get_lesson_repository
 from src.schemas.test_question_schema import (
     TestQuestionCreate,
     TestQuestionUpdate,
@@ -12,11 +13,13 @@ from src.schemas.test_question_schema import (
     CheckAnswerResponse,
     LessonAnswer
 )
+from src.models.test_question import TestQuestion
 
 
 class TestQuestionService:
-    def __init__(self, repo: TestQuestionRepository):
+    def __init__(self, repo: TestQuestionRepository, lesson_repo: LessonRepository):
         self.repo = repo
+        self.lesson_repo = lesson_repo
 
     async def get_test_question_by_id(self, test_question_id: Any) -> TestQuestionWithoutAnswerResponse:
         '''Получить тест по ID'''
@@ -42,6 +45,13 @@ class TestQuestionService:
 
     async def create_test_question(self, test_question_data: TestQuestionCreate) -> TestQuestionResponse:
         '''Создать новый тест'''
+
+        if await self.lesson_repo.get_by_id(test_question_data.lesson_id) is None:
+            raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Lesson with this ID does not exist",
+                )
+
         if await self.repo.exists_by_num_in_lesson(
             test_question_data.question_num, 
             test_question_data.lesson_id
@@ -58,7 +68,14 @@ class TestQuestionService:
         self, test_questions_data: List[TestQuestionCreate]
     ) -> List[TestQuestionResponse]:
         '''Создать несколько тестов'''
+
         for test_question_data in test_questions_data:
+            if await self.lesson_repo.get_by_id(test_question_data.lesson_id) is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Lesson with this ID does not exist",
+                )
+            
             if await self.repo.exists_by_num_in_lesson(
                 test_question_data.question_num, 
                 test_question_data.lesson_id
@@ -77,18 +94,53 @@ class TestQuestionService:
         self, test_question_id: Any, update_data: TestQuestionUpdate
     ) -> Optional[TestQuestionResponse]:
         '''Обновить тест'''
+
+        if await self.lesson_repo.get_by_id(update_data.lesson_id) is None:
+            raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Lesson with this ID does not exist",
+                )
+
+        existing_test_question = await self.repo.get_by_id(test_question_id)
+        if not existing_test_question:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Test question not found",
+            )
+        await self._validate_update_data(existing_test_question, update_data)
+
         update_dict = {
             k: v for k, v in update_data.model_dump().items() if v is not None
         }
         if not update_dict:
             return None
         test_question = await self.repo.update(test_question_id, update_dict)
-        if not test_question:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Test question not found",
-            )
+
         return TestQuestionResponse.model_validate(test_question)
+
+
+    async def _validate_update_data(
+        self, 
+        existing: TestQuestion, 
+        update_data: TestQuestionUpdate
+    ) -> None:
+        '''Валидация данных обновления с учетом существующих данных'''
+
+        if update_data.correct_answer is not None:
+            choices_to_check = None
+
+            if update_data.choices is not None:
+                choices_to_check = update_data.choices
+            else:
+                choices_to_check = existing.choices
+            
+            if update_data.correct_answer not in choices_to_check:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Answer '{update_data.correct_answer}' "
+                           f"must be among the choices: {choices_to_check}"
+                )
+
 
     async def delete_test_question(self, test_question_id: Any) -> None:
         '''Удалить тест'''
@@ -101,6 +153,13 @@ class TestQuestionService:
 
     async def get_test_questions_by_lesson_id(self, lesson_id: Any) -> List[TestQuestionWithoutAnswerResponse]:
         '''Получить тесты для урока'''
+
+        if await self.lesson_repo.get_by_id(lesson_id) is None:
+            raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Lesson with this ID does not exist",
+                )
+        
         test_questions = await self.repo.get_by_lesson_id(lesson_id)
         if not test_questions:
             raise HTTPException(
@@ -147,6 +206,13 @@ class TestQuestionService:
 
     async def get_estimate_by_lesson(self, lesson_id: Any, user_answers: LessonAnswer) -> float:
         '''Получить оценку за тест к уроку'''
+        
+        if await self.lesson_repo.get_by_id(lesson_id) is None:
+            raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Lesson with this ID does not exist",
+                )
+
         answers = []
         for ans in user_answers.user_answers:
             answers.append(ans.model_dump())
@@ -188,5 +254,6 @@ class TestQuestionService:
         return lesson_ids[0]
 async def get_test_question_service(
     repo: TestQuestionRepository = Depends(get_test_question_repository),
+    lesson_repo: LessonRepository = Depends(get_lesson_repository),
 ) -> TestQuestionService:
-    return TestQuestionService(repo)
+    return TestQuestionService(repo, lesson_repo)

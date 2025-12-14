@@ -1,6 +1,6 @@
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, Field, BeforeValidator
+from pydantic import BaseModel, Field, BeforeValidator, model_validator, ConfigDict
 from typing import Optional, List, Annotated
 
 def non_empty_str(v: str) -> str:
@@ -19,9 +19,15 @@ class TestQuestionBase(BaseModel):
     choices: List[NonEmptyStr]
     lesson_id: UUID
 
-
 class TestQuestionCreate(TestQuestionBase):
     correct_answer: NonEmptyStr
+    model_config = ConfigDict(validate_assignment=True)
+
+    @model_validator(mode='after')
+    def validate_answer(self) -> 'TestQuestionCreate':
+        if self.correct_answer.strip() not in [choice.strip() for choice in self.choices]:
+            raise ValueError(f"Answer {self.correct_answer} must be among the choices {self.choices}")
+        return self
 
 
 class TestQuestionUpdate(BaseModel):
