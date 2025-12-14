@@ -120,6 +120,9 @@ class UserService:
                 detail="User does not exist",
             )
 
+        if user.archived is True:
+            raise HTTPException(status_code=400, detail="Inactive user")
+
         user.update_at = datetime.utcnow()
         user.archived = True
 
