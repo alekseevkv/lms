@@ -55,11 +55,11 @@ class TestReviews:
             headers={"Authorization": f"Bearer {token['access_token']}"},
         )
 
-        assert response.status == HTTPStatus.CREATED
+        assert response.status == HTTPStatus.NOT_FOUND
 
-        if response.status == HTTPStatus.CREATED:
+        if response.status == HTTPStatus.NOT_FOUND:
             content = await response.json()
-            print("АААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААА")
+            assert content["detail"] == "Course not found"
 
 
     @pytest.mark.asyncio
