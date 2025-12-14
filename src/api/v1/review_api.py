@@ -5,8 +5,10 @@ from fastapi import APIRouter, Depends, Query, status
 
 from src.schemas.review_schema import ReviewCreate, ReviewResponse, ReviewUpdate
 from src.services.review_service import ReviewService, get_review_service
+from src.services.auth_service import AuthService, get_auth_service
 
 router = APIRouter()
+
 
 @router.get(
     "/{course_id}",
@@ -29,8 +31,10 @@ async def get_reviews_for_course(
 async def create_review(
     data: ReviewCreate,
     service: Annotated[ReviewService, Depends(get_review_service)],
+    auth_service: AuthService = Depends(get_auth_service),
 ):
-    return await service.create(data)
+    current_user = await auth_service.get_current_user()
+    return await service.create(current_user.uuid, data)
 
 
 @router.patch(
@@ -42,8 +46,11 @@ async def update_review(
     review_id: UUID,
     data: ReviewUpdate,
     service: Annotated[ReviewService, Depends(get_review_service)],
+    auth_service: AuthService = Depends(get_auth_service),
     delete: bool = Query(False, description="If true, review will be archived"),
 ):
+    _current_user = await auth_service.get_current_user()
+
     if delete:
         return await service.delete(review_id)
     return await service.update(review_id, data)
