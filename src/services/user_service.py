@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
@@ -123,6 +124,19 @@ class UserService:
         user.archived = True
 
         await self.repo.update(user)
+
+    async def get_active_users_by_admin(
+        self, skip: int | None, limit: int | None
+    ) -> Sequence[User]:
+        users = await self.repo.get_all_active(skip=skip, limit=limit)
+
+        if not users:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Users not found",
+            )
+
+        return users
 
 
 async def get_user_service(

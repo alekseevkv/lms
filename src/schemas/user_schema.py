@@ -1,5 +1,6 @@
 import re
 from enum import Enum
+from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, field_validator, model_validator
 
@@ -42,6 +43,14 @@ class UserBase(BaseModel):
 
 
 class UserResponse(UserBase):
+    username: str | None = None
+    roles: list[str] = []
+
+    model_config = {"from_attributes": True}
+
+
+class UserResponseWithId(UserBase):
+    uuid: UUID
     username: str | None = None
     roles: list[str] = []
 

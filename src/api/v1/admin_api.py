@@ -1,12 +1,14 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.schemas.course_schema import CourseBase, CourseResponse, CourseUpdate
 from src.schemas.user_schema import (
     DeleteUserByAdminResponse,
     UpdateUserByAdminRequest,
     UserResponse,
+    UserResponseWithId,
     UserRole,
 )
 from src.services.auth_service import AuthService, get_auth_service
@@ -116,3 +118,29 @@ async def delete_user_by_admin(
     await user_service.delete_user_by_admin(user_id)
 
     return {"msg": "User has been successfully deleted"}
+
+
+@router.get(
+    "/users/",
+    response_model=list[UserResponseWithId],
+    summary="Get active users by admin",
+)
+async def get_active_users_by_admin(
+    skip: Annotated[int | None, Query(ge=0, description="Entries number to skip")] = 0,
+    limit: Annotated[
+        int | None, Query(ge=1, le=1000, description="Entries limit")
+    ] = 100,
+    auth_service: AuthService = Depends(get_auth_service),
+    user_service: UserService = Depends(get_user_service),
+):
+    current_user = await auth_service.get_current_user()
+
+    if UserRole.admin not in current_user.roles:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Users can only be accessed by the admin",
+        )
+
+    users = await user_service.get_active_users_by_admin(skip=skip, limit=limit)
+
+    return users
