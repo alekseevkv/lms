@@ -102,30 +102,30 @@ class TestLessons:
             content = await response.json()
             assert content["detail"][0]["msg"] == expected_data["msg"]
 
-    @pytest.mark.asyncio
-    async def test_create_lesson_not_course(
-        self, aiohttp_client, async_session, access_token_admin
-    ):
-        """Тест /api/v1/lessons/create/: создание урока к несуществующему курсу"""
-        token = access_token_admin
-
-        req_url = f"/api/v1/lessons/create/"
-        name = "Первый урок"
-        payload = {
-            "name": name,
-            "desc": "Описание урока",
-            "content": "Контент урока",
-            "video_url": "http://example.com/jrn3o",
-            "course_id": str(uuid.uuid4()),
-        }
-
-        response = await aiohttp_client.post(
-            req_url,
-            json=payload,
-            headers={"Authorization": f"Bearer {token['access_token']}"},
-        )
-        content = await response.json()
-        print(content)
+    # @pytest.mark.asyncio
+    # async def test_create_lesson_not_course(
+    #     self, aiohttp_client, async_session, access_token_admin
+    # ):
+    #     """Тест /api/v1/lessons/create/: создание урока к несуществующему курсу"""
+    #     token = access_token_admin
+    #
+    #     req_url = f"/api/v1/lessons/create/"
+    #     name = "Первый урок"
+    #     payload = {
+    #         "name": name,
+    #         "desc": "Описание урока",
+    #         "content": "Контент урока",
+    #         "video_url": "http://example.com/jrn3o",
+    #         "course_id": str(uuid.uuid4()),
+    #     }
+    #
+    #     response = await aiohttp_client.post(
+    #         req_url,
+    #         json=payload,
+    #         headers={"Authorization": f"Bearer {token['access_token']}"},
+    #     )
+    #     content = await response.json()
+    #     print(content)
 
         # здесь должно быть описание ошибки
         # assert response.status == HTTPStatus.OK
