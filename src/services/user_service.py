@@ -42,6 +42,7 @@ class UserService:
 
         data_dump = user_data.model_dump()
         data_dump["password"] = self.get_password_hash(data_dump["password"])
+        data_dump["roles"] = [UserRole.student]
         user = await self.repo.create(data_dump)
 
         return user
@@ -108,6 +109,20 @@ class UserService:
         updated_user = await self.repo.update(user)
 
         return updated_user
+
+    async def delete_user_by_admin(self, user_id: UUID) -> None:
+        user = await self.get_user_by_id(user_id)
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User does not exist",
+            )
+
+        user.update_at = datetime.utcnow()
+        user.archived = True
+
+        await self.repo.update(user)
 
 
 async def get_user_service(

@@ -87,3 +87,7 @@ class UpdateUserByAdminRequest(UserBase):
     new_email: EmailStr | None = None
     username: str | None = None
     roles: list[UserRole] | None = None
+
+
+class DeleteUserByAdminResponse(BaseModel):
+    msg: str
