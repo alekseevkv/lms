@@ -372,7 +372,7 @@ class TestTestQuestion:
         print(lesson["uuid"])
 
         token = access_token
-        req_url = f"/api/v1/test_questions/{lesson["uuid"]}/"
+        req_url = f"/api/v1/test_questions/lesson/{lesson["uuid"]}/"
 
         response = await aiohttp_client.get(
             req_url,
@@ -384,7 +384,11 @@ class TestTestQuestion:
         if response.status == HTTPStatus.OK:
             content = await response.json()
 
-            assert content["lesson_id"] == lesson["uuid"]
+            # assert content["lesson_id"] == lesson["uuid"]
+            assert len(content["questions_list"]) > 0
+            for question in content["questions_list"]:
+                assert question["lesson_id"] == str(lesson["uuid"])
+
 
     @pytest.mark.asyncio
     async def test_get_test_questions_by_lesson_error(

@@ -95,11 +95,12 @@ class TestQuestionService:
     ) -> Optional[TestQuestionResponse]:
         '''Обновить тест'''
 
-        if await self.lesson_repo.get_by_id(update_data.lesson_id) is None:
-            raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Lesson with this ID does not exist",
-                )
+        if update_data.lesson_id is not None:
+            if await self.lesson_repo.get_by_id(update_data.lesson_id) is None:
+                raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Lesson with this ID does not exist",
+                    )
 
         existing_test_question = await self.repo.get_by_id(test_question_id)
         if not existing_test_question:
@@ -110,7 +111,7 @@ class TestQuestionService:
         await self._validate_update_data(existing_test_question, update_data)
 
         update_dict = {
-            k: v for k, v in update_data.model_dump().items() if v is not None
+            k: v for k, v in update_data.model_dump(exclude_none=True).items() if v is not None
         }
         if not update_dict:
             return None
@@ -180,6 +181,11 @@ class TestQuestionService:
 
     async def check_test_question(self, test_question_id: Any, user_answer: str) -> bool:
         '''Проверить ответ пользователя на вопрос'''
+        if not await self.repo.exists_by_id(test_question_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Test question not found",
+            )
         res = await self.repo.check_answer(test_question_id, user_answer)
         if not res:
             raise HTTPException(
@@ -192,6 +198,11 @@ class TestQuestionService:
         '''Проверить ответ пользователя на тест'''
         answers = []
         for ans in user_answers.user_answers:
+            if not await self.repo.exists_by_id(ans.uuid):
+                raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Test question not found",
+            )
             answers.append(ans.model_dump())
         res = await self.repo.bulk_check_answers(answers)
         if not res:
@@ -215,6 +226,11 @@ class TestQuestionService:
 
         answers = []
         for ans in user_answers.user_answers:
+            if not await self.repo.exists_by_id(ans.uuid):
+                raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Test question not found",
+            )
             answers.append(ans.model_dump())
         percentage = await self.repo.calculate_estimate(lesson_id, answers)
         return percentage
