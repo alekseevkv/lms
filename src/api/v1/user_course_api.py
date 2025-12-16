@@ -1,7 +1,7 @@
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 
 from src.schemas.user_course_schema import (
     UserCourseListResponse,
@@ -36,13 +36,6 @@ async def get_user_courses(
     - Общий прогресс в процентах
     """
     current_user = await auth_service.get_current_user()
-    
-    # Проверяем, что пользователь студент
-    #if UserRole.student not in current_user.roles:
-        #raise HTTPException(
-            #status_code=status.HTTP_403_FORBIDDEN,
-            #detail="Only students can access their courses"
-        #)
     
     return await user_course_service.get_user_courses(current_user.uuid)
 
@@ -97,75 +90,68 @@ async def enroll_in_course(
     """
     current_user = await auth_service.get_current_user()
     
-    # Проверяем, что пользователь студент
-    #if UserRole.student not in current_user.roles:
-        #raise HTTPException(
-           # status_code=status.HTTP_403_FORBIDDEN,
-           # detail="Only students can enroll in courses"
-        #)
-    
     return await user_course_service.enroll_in_course(current_user.uuid, course_id)
 
-
-@router.post(
-    "/{user_course_id}/progress",
+@router.put(
+    "/{user_course_id}/lessons/{lesson_id}/questions/{question_id}",
     response_model=UserCourseResponse,
-    summary="Update lesson progress"
+    summary="Update question progress"
 )
-async def update_lesson_progress(
+async def update_question_progress(
     user_course_id: UUID,
-    progress_update: UserCourseProgressUpdate,
+    lesson_id: UUID,
+    question_id: UUID,
+    estimate: float = Query(..., description="Estimate value (0 or 100)"),
     auth_service: AuthService = Depends(get_auth_service),
     user_course_service: UserCourseService = Depends(get_user_course_service)
 ):
     """
-    Обновить прогресс по уроку
-    
-    Используется после прохождения теста для сохранения оценки
-    Урок считается пройденным, если по нему была отправлена оценка (estimate > 0)
+    Обновить оценку для конкретного вопроса в уроке
     """
     current_user = await auth_service.get_current_user()
-    
     if UserRole.admin not in current_user.roles:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only admin can update lesson progress",
+            detail="Only admin can create update progress",
         )
-    
-    return await user_course_service.update_lesson_progress(
+    return await user_course_service.update_question_progress(
         user_course_id,
-        current_user.uuid,
-        progress_update
+        lesson_id,
+        question_id,
+        estimate
     )
 
+@router.patch(
+    "/{user_course_id}/reset-progress",
+    response_model=UserCourseResponse,
+    summary="Reset user course progress",
+    description="Сбрасывает прогресс пользователя по курсу (progress = []). " 
+)
+async def reset_user_course_progress(
+    user_course_id: UUID,
+    auth_service: AuthService = Depends(get_auth_service),
+    user_course_service: UserCourseService = Depends(get_user_course_service)
+):
+    """
+    Сбросить прогресс пользователя по курсу
+    
+    Устанавливает progress = [], как будто пользователь только записался на курс.
+    
+    """
+    current_user = await auth_service.get_current_user()
+    if UserRole.admin not in current_user.roles:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only admin can create update progress",
+        )
+    
+    return await user_course_service.reset_user_course_progress(user_course_id)
 
 @router.post(
     "/lessons/{lesson_id}/start",
     response_model=StartLessonResponse,
     summary="Start a lesson"
 )
-async def start_lesson(
-    lesson_id: UUID,
-    auth_service: AuthService = Depends(get_auth_service),
-    user_course_service: UserCourseService = Depends(get_user_course_service)
-):
-    """
-    Начать прохождение урока
-    
-    Если пользователь не записан на курс, содержащий урок, 
-    автоматически записывает его на курс
-    """
-    current_user = await auth_service.get_current_user()
-    
-    # Проверяем, что пользователь студент
-    #if UserRole.student not in current_user.roles:
-        #raise HTTPException(
-            #status_code=status.HTTP_403_FORBIDDEN,
-            #detail="Only students can start lessons"
-        #)
-    
-    return await user_course_service.start_lesson(current_user.uuid, lesson_id)
-
 
 @router.get(
     "/lessons/{lesson_id}/progress",
@@ -186,11 +172,34 @@ async def get_lesson_progress(
     """
     current_user = await auth_service.get_current_user()
     
-    # Проверяем, что пользователь студент
-    #if UserRole.student not in current_user.roles:
-        #raise HTTPException(
-            #status_code=status.HTTP_403_FORBIDDEN,
-            #detail="Only students can check lesson progress"
-        #)
-    
     return await user_course_service.get_lesson_progress(current_user.uuid, lesson_id)
+
+@router.patch(
+    "/{user_course_id}/soft-delete",
+    response_model=UserCourseResponse,
+    summary="Soft delete user course (admin only)",
+    description="Мягкое удаление user_course. Устанавливает archived=True. Только для администраторов."
+)
+async def soft_delete_user_course(
+    user_course_id: UUID,
+    auth_service: AuthService = Depends(get_auth_service),
+    user_course_service: UserCourseService = Depends(get_user_course_service)
+):
+    """
+    Мягкое удаление user_course
+    
+    ТОЛЬКО для администраторов. Студенты не могут удалять свои курсы.
+    Устанавливает флаг archived=True вместо физического удаления.
+    """
+    current_user = await auth_service.get_current_user()
+    if UserRole.admin not in current_user.roles:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only admin can create update progress",
+        )
+
+    
+    return await user_course_service.soft_delete_user_course(
+        user_course_id,
+        current_user.uuid
+    )
