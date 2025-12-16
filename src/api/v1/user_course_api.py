@@ -59,12 +59,6 @@ async def get_user_course_detail(
     """
     current_user = await auth_service.get_current_user()
     
-    # Проверяем, что пользователь студент
-    #if UserRole.student not in current_user.roles:
-        #raise HTTPException(
-            #status_code=status.HTTP_403_FORBIDDEN,
-            #detail="Only students can access their courses"
-        #)
     
     return await user_course_service.get_user_course_detail(
         user_course_id, 
@@ -147,11 +141,6 @@ async def reset_user_course_progress(
     
     return await user_course_service.reset_user_course_progress(user_course_id)
 
-@router.post(
-    "/lessons/{lesson_id}/start",
-    response_model=StartLessonResponse,
-    summary="Start a lesson"
-)
 
 @router.get(
     "/lessons/{lesson_id}/progress",
