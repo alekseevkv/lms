@@ -6,7 +6,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, BaseModelMixin
 from .course import Course
-#from .test_question import TestQuestion
 
 class Lesson(Base, BaseModelMixin):
     __tablename__ = "lessons"

@@ -57,7 +57,16 @@ class CourseRepository:
         await self.db.commit()
         await self.db.refresh(course)
         return course
-
+    
+    async def is_course_active(self, course_id: Any) -> bool:
+        """Проверяет, активен ли курс (не архивирован)"""
+        result = await self.db.execute(
+            select(Course).where(Course.uuid == course_id, not_(Course.archived))
+        )
+        
+        return result.scalar_one_or_none() is not None
+    
+    
     async def delete(self, course_id: Any) -> Course | None:
         course = await self.get_by_id(course_id)
         if course:

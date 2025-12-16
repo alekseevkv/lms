@@ -81,6 +81,10 @@ class CheckAnswerResponse(BaseModel):
 
 class CheckAnswerListResponse(BaseModel):
     checked_answers: List[CheckAnswerResponse]
+    message: Optional[str] = None
+    already_answered: Optional[List[UUID]] = None
+    new_questions_answered: Optional[List[UUID]] = None
+    error_message: Optional[str] = None
 
 
 class LessonEstimateResponse(BaseModel):

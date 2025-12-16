@@ -203,8 +203,16 @@ class TestQuestionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Test question not found",
             )
+            if not await self.repo.is_question_active(ans.uuid):
+                raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot check answers for archived question {ans.uuid}",
+                )
             answers.append(ans.model_dump())
+            
+            
         res = await self.repo.bulk_check_answers(answers)
+        
         if not res:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

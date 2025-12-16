@@ -167,7 +167,15 @@ class TestQuestionRepository:
             )
         )
         return result.scalar_one_or_none() is not None
-
+    
+    async def is_question_active(self, question_id: Any) -> bool:
+        """Проверяет, активен ли вопрос (не архивирован)"""
+        result = await self.db.execute(
+            select(TestQuestion).where(TestQuestion.uuid == question_id, not_(TestQuestion.archived))
+        )
+        return result.scalar_one_or_none() is not None
+    
+    
 async def get_test_question_repository(
     db: AsyncSession = Depends(get_session),
 ) -> TestQuestionRepository:

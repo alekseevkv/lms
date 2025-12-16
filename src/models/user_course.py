@@ -27,14 +27,8 @@ class UserCourse(Base, BaseModelMixin):
     progress: Mapped[Dict] = mapped_column(
         JSON,
         nullable=False,
-        default= list ##lambda: {"lessons": []}  # Храним как [{lesson_id, estimate}]
+        default= list
     )
-    #total_progress: Mapped[float] = mapped_column(
-    #    Float,
-    #    nullable=False,
-    #    default=0.0
-    #)
-
     # Связи
     user: Mapped[User] = relationship("User", back_populates="user_courses")
     course: Mapped[Course] = relationship("Course", back_populates="user_courses")
