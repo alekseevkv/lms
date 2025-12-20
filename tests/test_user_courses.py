@@ -50,76 +50,7 @@ class TestUserCourses:
             content = await response.json()
             assert content["detail"] == "Course not found"
 
-    #@pytest.mark.asyncio
-    #async def test_start_lesson(self, aiohttp_client, async_session, access_token, create_lesson):
-    #    """Тест /api/v1/user_courses/lessons/{lesson_id}/start: запись на урок (пользователь не записан на курс)"""
-    #    token = access_token
-    #    lesson = create_lesson
 
-    #    req_url = f"/api/v1/user_courses/lessons/{lesson["uuid"]}/start"
-    #    response = await aiohttp_client.post(
-    #        req_url,
-    #        headers={"Authorization": f"Bearer {token["access_token"]}"},
-    #    )
-
-    #    assert response.status == HTTPStatus.OK
-
-    #    if response.status == HTTPStatus.OK:
-    #        content = await response.json()
-    #        assert content["lesson_id"] == lesson["uuid"]
-    #        assert content["message"] == "Lesson started successfully. You can now proceed with the test."
-
-    #    async_session.commit()
-
-
-    #@pytest.mark.asyncio
-    #async def test_start_new_lesson(self, aiohttp_client, async_session, access_token, create_lesson):
-    #    """Тест /api/v1/user_courses/lessons/{lesson_id}/start: запись на урок (пользователь записан на курс)"""
-    #    token = access_token
-    #    lesson = create_lesson
-
-    #    req_url = f" /api/v1/user_courses/enroll/{lesson["course_id"]}"
-    #    await aiohttp_client.post(
-    #        req_url,
-    #        headers={"Authorization": f"Bearer {token["access_token"]}"},
-    #    )
-
-    #    req_url = f"/api/v1/user_courses/lessons/{lesson["uuid"]}/start"
-    #    response = await aiohttp_client.post(
-    #        req_url,
-    #        headers={"Authorization": f"Bearer {token["access_token"]}"},
-    #    )
-
-    #    assert response.status == HTTPStatus.OK
-
-    #    if response.status == HTTPStatus.OK:
-    #        content = await response.json()
-    #        assert content["lesson_id"] == lesson["uuid"]
-    #        assert content["message"] == "Lesson started successfully. You can now proceed with the test."
-
-    #    async_session.commit()
-
-
-    @pytest.mark.asyncio
-    async def test_start_lesson_error(
-        self, aiohttp_client, async_session, access_token, create_lesson
-    ):
-        """Тест /api/v1/user_courses/lessons/{lesson_id}/start: запись на несуществующий урок"""
-        token = access_token
-
-        req_url = f"/api/v1/user_courses/lessons/{uuid.uuid4()}/start"
-        response = await aiohttp_client.post(
-            req_url,
-            headers={"Authorization": f"Bearer {token['access_token']}"},
-        )
-
-        assert response.status == HTTPStatus.NOT_FOUND
-
-        if response.status == HTTPStatus.NOT_FOUND:
-            content = await response.json()
-            assert content["detail"] == "Lesson not found"
-
-        async_session.commit()
 
 
     @pytest.mark.asyncio
@@ -151,28 +82,6 @@ class TestUserCourses:
             assert content["lesson_id"] == lesson["uuid"]
 
         async_session.commit()
-
-
-    #@pytest.mark.asyncio
-    #async def test_get_lesson_not_progress(
-    #    self, aiohttp_client, async_session, access_token, create_lesson
-    #):
-    #    """Тест /api/v1/user_courses/lessons/{lesson_id}/progress: прогресс по уроку (пользователь не записан на урок)"""
-    #    token = access_token
-     #   lesson = create_lesson
-
-    #    req_url = f"/api/v1/user_courses/lessons/{lesson['uuid']}/progress"
-    #    response = await aiohttp_client.get(
-    #        req_url,
-    #        headers={"Authorization": f"Bearer {token['access_token']}"},
-    #    )
-
-    #    assert response.status == HTTPStatus.OK
-
-    #    if response.status == HTTPStatus.OK:
-    #        content = await response.json()
-    #        assert content["lesson_id"] == lesson["uuid"]
-    #        assert content["message"] == "Lesson not started yet"
 
 
     @pytest.mark.asyncio
