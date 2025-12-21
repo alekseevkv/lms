@@ -18,6 +18,7 @@
 - Разработка Pydantic-схем валидации данных `LessonSchema` и `UserCourseSchema` и сервисных слоев `LessonService` и `UserCourseService`
 - Интеграция с модулями `Course` и `TestQuestion` и настройка зависимостей
 - Разработка API
+  
   Эндпоинты для `Lesson`:
   - Получение урока по id и списка уроков для конкретного курса
   - CRUD-операции
